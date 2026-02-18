@@ -48,6 +48,12 @@ export function Header() {
             Vision
           </Link>
           <Link
+            href="/dashboard/log"
+            className="text-[14px] text-stone hover:text-bark transition-colors"
+          >
+            개발 로그
+          </Link>
+          <Link
             href="/request"
             className="inline-flex items-center rounded-[6px] bg-bark px-5 py-2 text-[14px] font-medium text-warm-white transition-colors hover:bg-bark-light"
           >
