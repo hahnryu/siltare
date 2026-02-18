@@ -2,7 +2,9 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { Interview } from './types';
 
-const DATA_DIR = path.join(process.cwd(), 'data', 'interviews');
+const DATA_DIR = process.env.VERCEL
+  ? path.join('/tmp', 'interviews')
+  : path.join(process.cwd(), 'data', 'interviews');
 
 async function ensureDir() {
   await fs.mkdir(DATA_DIR, { recursive: true });
