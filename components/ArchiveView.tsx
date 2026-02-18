@@ -123,6 +123,7 @@ function MsgAudioPlayer({ src }: { src: string }) {
 export function ArchiveView({ interview }: { interview: Interview }) {
   const router = useRouter();
   const [linkCopied, setLinkCopied] = useState(false);
+  const hasKakao = !!process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
   useFadeIn();
 
   const { id, interviewee, requester, mode, messages, summary, entities, transcript, createdAt } =
@@ -146,6 +147,25 @@ export function ArchiveView({ interview }: { interview: Interview }) {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2500);
     }).catch(() => {});
+  }
+
+  function handleKakaoShare() {
+    if (typeof window === 'undefined') return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const K = (window as any).Kakao;
+    if (!K) return;
+    if (!K.isInitialized()) K.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
+    const archiveUrl = window.location.href;
+    K.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: `${interviewee.name}의 이야기`,
+        description: '실타래로 기록된 소중한 생애 이야기입니다.',
+        imageUrl: 'https://siltare.vercel.app/og-image.png',
+        link: { mobileWebUrl: archiveUrl, webUrl: archiveUrl },
+      },
+      buttonTitle: '이야기 보기',
+    });
   }
 
   const subtitle =
@@ -370,6 +390,15 @@ export function ArchiveView({ interview }: { interview: Interview }) {
             >
               {linkCopied ? '링크가 복사되었습니다 ✓' : '공유 링크 생성'}
             </button>
+            {hasKakao && (
+              <button
+                onClick={handleKakaoShare}
+                className="mt-2 h-[44px] w-full rounded-[6px] text-[14px] font-medium transition-opacity hover:opacity-90"
+                style={{ backgroundColor: '#FEE500', color: '#191919' }}
+              >
+                카카오톡으로 공유하기
+              </button>
+            )}
           </div>
         </div>
       </section>

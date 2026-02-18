@@ -235,6 +235,25 @@ export default function RequestPage() {
     }
   };
 
+  const hasKakao = !!process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
+
+  const sendKakao = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const K = typeof window !== 'undefined' ? (window as any).Kakao : null;
+    if (!K) return;
+    if (!K.isInitialized()) K.init(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
+    K.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: `${intervieweeName}님의 이야기를 들어주세요`,
+        description: `${requesterName}님이 이야기를 여쭙고 싶어합니다.`,
+        imageUrl: 'https://siltare.vercel.app/og-image.png',
+        link: { mobileWebUrl: generatedLink, webUrl: generatedLink },
+      },
+      buttonTitle: '이야기 시작하기',
+    });
+  };
+
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(generatedLink);
@@ -287,14 +306,17 @@ export default function RequestPage() {
                     </>
                   )}
                 </button>
-                <button
-                  type="button"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-[6px] px-4 py-3 text-sm font-medium cursor-pointer transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: '#FEE500', color: '#191919' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  <span>{LABELS.resultKakao}</span>
-                </button>
+                {hasKakao && (
+                  <button
+                    type="button"
+                    onClick={sendKakao}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-[6px] px-4 py-3 text-sm font-medium cursor-pointer transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: '#FEE500', color: '#191919' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span>{LABELS.resultKakao}</span>
+                  </button>
+                )}
               </div>
             </div>
 
