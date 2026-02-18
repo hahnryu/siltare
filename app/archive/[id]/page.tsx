@@ -1,8 +1,105 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
+
+// ---- AudioPlayer ----
+const AUDIO_BAR_COUNT = 48;
+const DEMO_DURATION = 32 * 60 + 14; // 32:14
+
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
+
+const WAVEFORM = Array.from({ length: AUDIO_BAR_COUNT }, (_, i) => {
+  const t = i / AUDIO_BAR_COUNT;
+  const base = 0.3 + 0.4 * Math.sin(t * Math.PI);
+  return Math.min(1, base + seededRandom(i + 1) * 0.3);
+});
+
+function fmtTime(sec: number) {
+  const m = Math.floor(sec / 60).toString().padStart(2, '0');
+  const s = Math.floor(sec % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function AudioPlayer() {
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progress = currentTime / DEMO_DURATION;
+
+  const toggle = useCallback(() => setPlaying((p) => !p), []);
+
+  useEffect(() => {
+    if (playing) {
+      timerRef.current = setInterval(() => {
+        setCurrentTime((t) => {
+          if (t >= DEMO_DURATION) { setPlaying(false); return 0; }
+          return t + 1;
+        });
+      }, 1000);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [playing]);
+
+  return (
+    <section className="px-4 mt-6">
+      <div className="mx-auto max-w-2xl">
+        <div className="rounded-xl bg-warm-white border border-mist p-6">
+          <p className="text-sm font-medium text-stone mb-5">원본 음성 전체 듣기</p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggle}
+              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-amber text-warm-white transition-transform hover:scale-105 active:scale-95"
+              aria-label={playing ? '일시정지' : '재생'}
+            >
+              {playing ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: '2px' }}><polygon points="5,3 19,12 5,21"/></svg>
+              )}
+            </button>
+            <div className="flex-1 min-w-0">
+              <div
+                className="flex items-end gap-[2px] h-12 cursor-pointer"
+                role="slider"
+                aria-label="오디오 재생 위치"
+                aria-valuemin={0}
+                aria-valuemax={DEMO_DURATION}
+                aria-valuenow={Math.floor(currentTime)}
+                tabIndex={0}
+              >
+                {WAVEFORM.map((height, i) => {
+                  const isActive = i / AUDIO_BAR_COUNT <= progress;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentTime((i / AUDIO_BAR_COUNT) * DEMO_DURATION)}
+                      className={`flex-1 min-w-[2px] rounded-full transition-colors duration-150 ${isActive ? 'bg-amber' : 'bg-mist'}`}
+                      style={{ height: `${height * 100}%` }}
+                      aria-hidden="true"
+                      tabIndex={-1}
+                    />
+                  );
+                })}
+              </div>
+              <div className="mt-2 flex justify-between text-xs text-stone">
+                <span>{fmtTime(currentTime)}</span>
+                <span>{fmtTime(DEMO_DURATION)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+// ---- /AudioPlayer ----
 
 const LABELS = {
   back: '돌아가기',
