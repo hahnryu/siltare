@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 
 const LABELS = {
-  logo: '실타래',
   back: '돌아가기',
   recordedDate: '2026년 2월 15일 기록',
   title: '어머니의 이야기',
@@ -22,7 +21,7 @@ const LABELS = {
   shareHeading: '가족에게 공유하기',
   shareSub: '형제, 자매에게 이 기록을 나누세요',
   shareCta: '공유 링크 생성',
-  footerNote: '실타래 - 소중한 이야기를 기록합니다',
+  footerNote: '소중한 이야기를 기록합니다',
 };
 
 const SUMMARY_PARAGRAPHS = [
@@ -50,49 +49,66 @@ export default function ArchivePage() {
       <Header />
 
       <main>
+        {/* Back button */}
         <div className="mx-auto max-w-2xl px-4 pt-6">
-          <button onClick={() => router.back()} className="flex items-center gap-1 text-[14px] text-stone hover:text-bark transition-colors">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-1.5 text-sm text-stone hover:text-bark transition-colors"
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             {LABELS.back}
           </button>
         </div>
-        <section className="px-4 pt-8 pb-8">
+
+        {/* Hero summary */}
+        <section className="px-4 pt-8 pb-8 md:pt-16 md:pb-12">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-stone text-[13px]">{LABELS.recordedDate}</p>
-            <h1 className="font-serif mt-4 text-[32px] font-bold text-bark">{LABELS.title}</h1>
-            <p className="mt-3 text-[18px] text-leaf">{LABELS.subtitle}</p>
-            <div className="mt-8 flex items-center justify-center gap-6 text-[13px] text-stone">
+            <p className="text-sm text-stone tracking-wide">{LABELS.recordedDate}</p>
+            <h1 className="font-serif mt-4 text-3xl font-bold tracking-tight text-bark text-balance md:text-4xl lg:text-5xl">
+              {LABELS.title}
+            </h1>
+            <p className="mt-3 text-lg text-leaf md:text-xl">{LABELS.subtitle}</p>
+
+            <div className="mt-8 flex items-center justify-center gap-6 text-sm text-stone md:gap-8">
               <span className="flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                 {LABELS.duration}
               </span>
-              <span className="w-px h-4 bg-mist" />
+              <span className="w-px h-4 bg-mist" aria-hidden="true" />
               <span className="flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber shrink-0"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                 {LABELS.charCount}
               </span>
-              <span className="w-px h-4 bg-mist" />
+              <span className="w-px h-4 bg-mist" aria-hidden="true" />
               <span className="flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber shrink-0"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                 {LABELS.topicCount}
               </span>
             </div>
           </div>
         </section>
 
-        <section className="px-4 mt-10">
+        {/* AI Summary */}
+        <section className="px-4 mt-4">
           <div className="mx-auto max-w-2xl">
             <div className="flex items-center gap-2 mb-5">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/></svg>
-              <h2 className="font-serif text-[20px] font-bold text-bark">{LABELS.summaryHeading}</h2>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber shrink-0"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/></svg>
+              <h2 className="font-serif text-xl font-bold text-bark">{LABELS.summaryHeading}</h2>
             </div>
-            <div className="rounded-[12px] bg-warm-white border border-mist p-6">
+
+            <div className="rounded-xl bg-warm-white border border-mist p-6 md:p-8">
               <div className="space-y-5">
                 {SUMMARY_PARAGRAPHS.map((para, i) => (
                   <div key={i}>
                     <p className="text-bark leading-relaxed text-[15px]">{para.text}</p>
-                    <button className="mt-1.5 inline-flex items-center gap-1 text-[12px] text-amber hover:text-amber-light transition-colors">
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor"/><path d="M5 4L8 6L5 8V4Z" fill="currentColor"/></svg>
+                    <button
+                      className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-amber hover:text-amber-light transition-colors"
+                      aria-label={`${para.timestamp} 시점으로 이동`}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                        <circle cx="6" cy="6" r="5.5" stroke="currentColor" />
+                        <path d="M5 4L8 6L5 8V4Z" fill="currentColor" />
+                      </svg>
                       {para.timestamp}
                     </button>
                   </div>
@@ -102,33 +118,47 @@ export default function ArchivePage() {
           </div>
         </section>
 
+        {/* Chapter list */}
         <section className="px-4 mt-10">
           <div className="mx-auto max-w-2xl">
             <div className="flex items-center gap-2 mb-5">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-              <h2 className="font-serif text-[20px] font-bold text-bark">{LABELS.chapterHeading}</h2>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber shrink-0"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              <h2 className="font-serif text-xl font-bold text-bark">{LABELS.chapterHeading}</h2>
             </div>
-            <div className="rounded-[12px] bg-warm-white border border-mist overflow-hidden divide-y divide-mist">
+
+            <div className="rounded-xl bg-warm-white border border-mist overflow-hidden divide-y divide-mist">
               {CHAPTERS.map((chapter) => (
                 <div key={chapter.id}>
                   <button
                     onClick={() => setOpenChapter(openChapter === chapter.id ? null : chapter.id)}
                     className="w-full flex items-start gap-3 px-6 py-5 text-left hover:bg-mist-light transition-colors"
+                    aria-expanded={openChapter === chapter.id}
                   >
                     <span className="flex w-6 h-6 shrink-0 items-center justify-center rounded-full bg-mist text-[12px] font-semibold text-bark mt-0.5">
                       {chapter.number}
                     </span>
-                    <div className="flex-1">
-                      <p className="text-[14px] font-medium text-bark">{chapter.title}</p>
-                      <p className="text-[12px] text-stone mt-0.5">{chapter.timestamp}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-bark leading-snug">{chapter.title}</p>
+                      <p className="text-xs text-stone mt-0.5">{chapter.timestamp}</p>
                     </div>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-stone transition-transform ${openChapter === chapter.id ? 'rotate-180' : ''}`}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`text-stone shrink-0 transition-transform duration-200 ${openChapter === chapter.id ? 'rotate-180' : ''}`}
+                      aria-hidden="true"
+                    >
                       <path d="m6 9 6 6 6-6"/>
                     </svg>
                   </button>
                   {openChapter === chapter.id && (
                     <div className="px-6 pb-5 pl-[60px]">
-                      <p className="font-serif text-[14px] text-leaf leading-relaxed italic">{chapter.excerpt}</p>
+                      <p className="font-serif text-sm text-leaf leading-relaxed italic">{chapter.excerpt}</p>
                     </div>
                   )}
                 </div>
@@ -137,27 +167,37 @@ export default function ArchivePage() {
           </div>
         </section>
 
+        {/* Bottom CTA */}
         <section className="px-4 mt-12 pb-16">
           <div className="mx-auto max-w-2xl">
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[12px] bg-warm-white border border-mist p-6 flex flex-col">
+              {/* Book CTA */}
+              <div className="rounded-xl bg-warm-white border border-mist p-6 flex flex-col">
                 <div className="flex items-center gap-2 mb-3">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-                  <h3 className="font-serif text-[15px] font-bold text-bark">{LABELS.bookHeading}</h3>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber shrink-0"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                  <h3 className="font-serif text-base font-bold text-bark">{LABELS.bookHeading}</h3>
                 </div>
-                <p className="text-[13px] text-leaf leading-relaxed flex-1">{LABELS.bookSub}</p>
-                <p className="text-[13px] font-semibold text-bark mt-3">{LABELS.bookPrice}</p>
-                <button onClick={() => router.push(`/book/${id}`)} className="mt-4 w-full rounded-[6px] bg-bark text-warm-white py-2.5 text-[14px] font-medium transition-colors hover:bg-bark-light">
+                <p className="text-sm text-leaf leading-relaxed flex-1">{LABELS.bookSub}</p>
+                <p className="text-sm font-semibold text-bark mt-3">{LABELS.bookPrice}</p>
+                <button
+                  onClick={() => router.push(`/book/${id}`)}
+                  className="mt-4 w-full rounded-[6px] bg-bark text-warm-white py-2.5 text-sm font-medium transition-colors hover:bg-bark-light"
+                >
                   {LABELS.bookCta}
                 </button>
               </div>
-              <div className="rounded-[12px] bg-warm-white border border-mist p-6 flex flex-col">
+
+              {/* Share CTA */}
+              <div className="rounded-xl bg-warm-white border border-mist p-6 flex flex-col">
                 <div className="flex items-center gap-2 mb-3">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                  <h3 className="font-serif text-[15px] font-bold text-bark">{LABELS.shareHeading}</h3>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber shrink-0"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  <h3 className="font-serif text-base font-bold text-bark">{LABELS.shareHeading}</h3>
                 </div>
-                <p className="text-[13px] text-leaf leading-relaxed flex-1">{LABELS.shareSub}</p>
-                <button onClick={() => alert('준비 중입니다')} className="mt-4 w-full rounded-[6px] border border-mist text-bark py-2.5 text-[14px] font-medium transition-colors hover:bg-mist-light">
+                <p className="text-sm text-leaf leading-relaxed flex-1">{LABELS.shareSub}</p>
+                <button
+                  onClick={() => alert('준비 중입니다')}
+                  className="mt-4 w-full rounded-[6px] border border-mist bg-warm-white text-bark py-2.5 text-sm font-medium transition-colors hover:bg-mist-light"
+                >
                   {LABELS.shareCta}
                 </button>
               </div>
@@ -166,8 +206,10 @@ export default function ArchivePage() {
         </section>
       </main>
 
-      <footer className="border-t border-mist py-6 text-center">
-        <a href="/" className="text-[12px] text-stone hover:text-bark transition-colors">🧵 실타래</a>
+      <footer className="border-t border-mist py-8 text-center">
+        <a href="/" className="font-serif text-xs text-stone hover:text-bark transition-colors">
+          🧵 실타래 &mdash; {LABELS.footerNote}
+        </a>
       </footer>
     </div>
   );

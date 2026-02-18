@@ -6,7 +6,6 @@ import { Interview } from '@/lib/types';
 import { Header } from '@/components/Header';
 
 const LABELS = {
-  logo: '🧵 실타래',
   loading: '잠시만 기다려주세요...',
   notFound: '링크를 찾을 수 없습니다.',
   bodyLine1: '편하게 이야기해 주시면 됩니다.',
@@ -62,27 +61,38 @@ export default function IntervieweeLandingPage() {
   return (
     <div className="flex min-h-dvh flex-col bg-cream">
       <Header />
-      <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col px-6 py-8">
 
-        <main className="flex flex-1 flex-col items-center justify-center py-10">
-          <div className="w-full rounded-[12px] border border-mist bg-warm-white p-8 shadow-sm">
-            <h1 className="font-serif text-[24px] font-bold leading-relaxed text-bark">
+      <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col px-6 py-8">
+        <main className="flex flex-1 flex-col items-center justify-center py-8">
+
+          {/* Warm card */}
+          <div
+            className="w-full rounded-[12px] border border-mist bg-warm-white p-8 shadow-sm"
+            role="region"
+            aria-label="이야기 안내"
+          >
+            <h1 className="font-serif text-[24px] font-bold leading-relaxed tracking-tight text-bark">
               {requesterName}님이<br />
-              {intervieweeName}의 이야기를 듣고 싶어합니다.
+              {intervieweeName}의 이야기를<br className="hidden xs:block" /> 듣고 싶어합니다.
             </h1>
+
             <hr className="my-6 border-mist" />
+
             <p className="text-[16px] leading-[1.8] text-leaf">
               {LABELS.bodyLine1}<br />
               {LABELS.bodyLine2}<br />
               {LABELS.bodyLine3}
             </p>
+
             <div className="h-4" />
+
             <p className="text-[15px] leading-[1.8] text-stone">
               {LABELS.infoLine1}<br />
               {LABELS.infoLine2}
             </p>
           </div>
 
+          {/* Consent checkbox */}
           <div className="mt-6 w-full">
             <label className="flex cursor-pointer items-start gap-3">
               <input
@@ -98,25 +108,32 @@ export default function IntervieweeLandingPage() {
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat',
                 }}
+                aria-describedby="consent-description"
               />
               <span className="text-[16px] leading-snug text-bark">{LABELS.consentLabel}</span>
             </label>
-            <p className="mt-1.5 pl-8 text-[13px] leading-relaxed text-stone">
+            <p
+              id="consent-description"
+              className="mt-1.5 pl-8 text-[13px] leading-relaxed text-stone"
+            >
               기록은 {requesterName}님과 본인만 열람할 수 있습니다.
             </p>
           </div>
 
+          {/* CTA */}
           <button
             disabled={!agreed}
             onClick={() => router.push(`/interview/${id}`)}
-            className="mt-6 w-full rounded-[6px] bg-amber text-[18px] font-medium text-warm-white transition-opacity disabled:opacity-40"
+            className="mt-6 w-full rounded-[6px] bg-amber text-[18px] font-medium text-warm-white shadow-sm transition-opacity disabled:opacity-40"
             style={{ height: '56px' }}
+            aria-label="동의하고 이야기 시작하기"
           >
             {LABELS.startBtn}
           </button>
 
-          <div className="mt-6 w-full rounded-[12px] border border-mist bg-mist-light p-4">
-            <p className="text-[13px] font-medium text-bark mb-1">{LABELS.privacyTitle}</p>
+          {/* Privacy box */}
+          <div className="mt-6 w-full rounded-[12px] border border-mist bg-mist-light px-5 py-4">
+            <p className="text-[13px] font-medium text-bark mb-1.5">{LABELS.privacyTitle}</p>
             <p className="text-[12px] text-stone leading-relaxed">
               {LABELS.privacy1}<br />
               {LABELS.privacy2}<br />
@@ -125,13 +142,10 @@ export default function IntervieweeLandingPage() {
           </div>
         </main>
 
-        <footer className="pb-4 pt-2 text-center">
+        <footer className="py-4 text-center">
           <p className="text-[12px] text-stone">{LABELS.footerNote}</p>
         </footer>
       </div>
-      <footer className="py-4 text-center border-t border-mist">
-        <a href="/" className="text-[12px] text-stone hover:text-bark transition-colors">🧵 실타래</a>
-      </footer>
     </div>
   );
 }

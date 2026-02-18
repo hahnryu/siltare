@@ -1,162 +1,314 @@
 'use client';
 
+import { useState } from 'react';
 import { Header } from '@/components/Header';
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
   PieChart,
   Pie,
   Cell,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
 
 const LABELS = {
-  logo: '🧵 실타래',
-  title: '관리자 대시보드',
-  totalInterviews: '전체 대화',
-  completedInterviews: '완료된 대화',
-  avgDuration: '평균 시간',
-  conversionRate: '완료율',
-  weeklyLabel: '주간 생성 추이',
-  statusLabel: '상태 분포',
-  recentLabel: '최근 대화',
+  title: '실타래 관리자',
+  range7d: '최근 7일',
+  range30d: '최근 30일',
+  rangeAll: '전체',
+  totalInterviews: '총 인터뷰',
+  totalRecording: '총 녹음 시간',
+  conversionRate: '전환율',
+  revenue: '매출',
+  dailyChart: '일별 인터뷰 수',
+  revenueChart: '매출 추이',
+  recentLabel: '최근 인터뷰',
+  insightsLabel: '데이터 인사이트',
+  generationLabel: '세대별 분포',
+  topicLabel: '주요 주제 빈도',
 };
 
-const WEEKLY_DATA = [
-  { day: '월', count: 3 },
-  { day: '화', count: 7 },
-  { day: '수', count: 5 },
-  { day: '목', count: 9 },
-  { day: '금', count: 12 },
-  { day: '토', count: 8 },
-  { day: '일', count: 4 },
+const RANGES = ['최근 7일', '최근 30일', '전체'] as const;
+type Range = typeof RANGES[number];
+
+const DAILY_DATA = [
+  { date: '2/12', count: 5 },
+  { date: '2/13', count: 9 },
+  { date: '2/14', count: 11 },
+  { date: '2/15', count: 7 },
+  { date: '2/16', count: 10 },
+  { date: '2/17', count: 12 },
+  { date: '2/18', count: 8 },
 ];
 
-const STATUS_DATA = [
-  { name: '완료', value: 23, color: '#C4956A' },
-  { name: '진행중', value: 8, color: '#8B7355' },
-  { name: '대기', value: 5, color: '#E8E0D4' },
+const REVENUE_DATA = [
+  { date: '2/4', revenue: 420 },
+  { date: '2/7', revenue: 390 },
+  { date: '2/10', revenue: 510 },
+  { date: '2/13', revenue: 480 },
+  { date: '2/16', revenue: 620 },
+  { date: '2/18', revenue: 700 },
+];
+
+const GENERATION_DATA = [
+  { name: '70대', value: 42, color: '#C4956A' },
+  { name: '60대', value: 38, color: '#D4A97A' },
+  { name: '80대+', value: 15, color: '#8B6544' },
+  { name: '50대', value: 5, color: '#E0C09A' },
+];
+
+const TOPIC_DATA = [
+  { topic: '어린 시절', percent: 89 },
+  { topic: '자녀에게 하고 싶은 말', percent: 76 },
+  { topic: '결혼 이야기', percent: 71 },
+  { topic: '가장 힘들었던 시기', percent: 65 },
+  { topic: '인생의 전환점', percent: 52 },
 ];
 
 const RECENT_INTERVIEWS = [
-  { id: 'abc123', interviewee: '김영순', requester: '김민수', relationship: '부모님', status: '완료', date: '2026.02.15', duration: '32분' },
-  { id: 'def456', interviewee: '이학봉', requester: '이지영', relationship: '부모님', status: '진행중', date: '2026.02.17', duration: '18분' },
-  { id: 'ghi789', interviewee: '박정숙', requester: '박성호', relationship: '부모님', status: '대기', date: '2026.02.18', duration: '-' },
-  { id: 'jkl012', interviewee: '최강식', requester: '최유진', relationship: '스승', status: '완료', date: '2026.02.16', duration: '41분' },
-  { id: 'mno345', interviewee: '정희영', requester: '정민재', relationship: '친구', status: '완료', date: '2026.02.14', duration: '28분' },
+  { date: '2026.02.18', relation: '어머니', region: '안동', duration: '32분', status: '완료', bookOrder: '₩79,000' },
+  { date: '2026.02.17', relation: '아버지', region: '서울', duration: '28분', status: '완료', bookOrder: null },
+  { date: '2026.02.17', relation: '할머니', region: '부산', duration: '45분', status: '완료', bookOrder: '₩199,000' },
+  { date: '2026.02.16', relation: '어머니', region: '제주', duration: '31분', status: '진행중', bookOrder: null },
+  { date: '2026.02.16', relation: '할아버지', region: '대전', duration: '38분', status: '완료', bookOrder: '₩79,000' },
+  { date: '2026.02.15', relation: '어머니', region: '광주', duration: '27분', status: '실패', bookOrder: null },
+  { date: '2026.02.15', relation: '아버지', region: '수원', duration: '41분', status: '완료', bookOrder: '₩199,000' },
+  { date: '2026.02.14', relation: '할머니', region: '인천', duration: '35분', status: '완료', bookOrder: '₩79,000' },
 ];
 
 const STATUS_BADGE: Record<string, string> = {
-  '완료': 'text-green-700 bg-green-50',
-  '진행중': 'text-amber bg-amber/10',
-  '대기': 'text-stone bg-mist',
+  '완료': 'bg-green-50 text-green-700 border border-green-200',
+  '진행중': 'bg-amber/10 text-amber border border-amber/30',
+  '실패': 'bg-red-50 text-red-600 border border-red-200',
 };
 
-function MetricCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function ChartTooltip({ active, payload, label, unit }: { active?: boolean; payload?: Array<{ value: number }>; label?: string; unit?: string }) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border border-mist bg-warm-white px-3 py-2 shadow-md text-bark">
+        <p className="text-xs text-stone">{label}</p>
+        <p className="text-sm font-semibold">
+          {unit === '₩' ? `₩${payload[0].value.toLocaleString()}만` : `${payload[0].value}건`}
+        </p>
+      </div>
+    );
+  }
+  return null;
+}
+
+function TopicTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { topic: string; percent: number } }> }) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border border-mist bg-warm-white px-3 py-2 shadow-md">
+        <p className="text-xs font-medium text-bark">{payload[0].payload.topic}</p>
+        <p className="text-sm font-bold text-amber">{payload[0].payload.percent}%</p>
+      </div>
+    );
+  }
+  return null;
+}
+
+function MetricCard({ label, value, change, changeLabel, sub }: {
+  label: string; value: string; change?: string; changeLabel?: string; sub?: string;
+}) {
   return (
-    <div className="rounded-[12px] border border-mist bg-warm-white p-5">
-      <p className="text-[13px] text-stone">{label}</p>
-      <p className="mt-1 font-serif text-[28px] font-bold text-bark">{value}</p>
-      {sub && <p className="text-[12px] text-stone mt-0.5">{sub}</p>}
+    <div className="rounded-xl border border-mist bg-warm-white p-5">
+      <p className="text-sm text-stone">{label}</p>
+      <div className="flex items-end gap-2 mt-1">
+        <p className="font-serif text-[28px] font-bold tracking-tight text-bark">{value}</p>
+        {change && (
+          <span className="flex items-center text-xs font-medium text-emerald-600 mb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0"><path d="m7 17 10-10M7 7h10v10"/></svg>
+            {change}
+          </span>
+        )}
+      </div>
+      {(changeLabel || sub) && (
+        <p className="text-xs text-stone mt-0.5">{changeLabel || sub}</p>
+      )}
     </div>
   );
 }
 
 export default function DashboardPage() {
+  const [range, setRange] = useState<Range>('최근 7일');
+
   return (
     <div className="min-h-screen bg-cream">
       <Header />
 
-      <main className="mx-auto max-w-5xl px-4 py-8 space-y-8">
-        <h1 className="font-serif text-[22px] font-bold text-bark">{LABELS.title}</h1>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <MetricCard label={LABELS.totalInterviews} value="36" sub="누적" />
-          <MetricCard label={LABELS.completedInterviews} value="23" sub="전체의 64%" />
-          <MetricCard label={LABELS.avgDuration} value="29분" sub="완료 기준" />
-          <MetricCard label={LABELS.conversionRate} value="64%" sub="생성 대비 완료" />
-        </div>
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-6">
 
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 rounded-[12px] border border-mist bg-warm-white p-5">
-            <h2 className="font-serif text-[16px] font-bold text-bark mb-4">{LABELS.weeklyLabel}</h2>
-            <ResponsiveContainer width="100%" height={160}>
-              <AreaChart data={WEEKLY_DATA}>
-                <defs>
-                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#C4956A" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#C4956A" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9E9585' }} axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Tooltip contentStyle={{ borderRadius: 6, border: '1px solid #E8E0D4', fontSize: 13 }} />
-                <Area type="monotone" dataKey="count" stroke="#C4956A" strokeWidth={2} fill="url(#colorCount)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="rounded-[12px] border border-mist bg-warm-white p-5">
-            <h2 className="font-serif text-[16px] font-bold text-bark mb-4">{LABELS.statusLabel}</h2>
-            <ResponsiveContainer width="100%" height={120}>
-              <PieChart>
-                <Pie data={STATUS_DATA} cx="50%" cy="50%" innerRadius={35} outerRadius={55} dataKey="value" paddingAngle={3}>
-                  {STATUS_DATA.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: 6, border: '1px solid #E8E0D4', fontSize: 13 }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="mt-2 space-y-1">
-              {STATUS_DATA.map((s) => (
-                <div key={s.name} className="flex items-center gap-2 text-[12px] text-stone">
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                  {s.name} {s.value}건
-                </div>
+          {/* Dashboard header */}
+          <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="font-serif text-xl font-bold tracking-tight text-bark sm:text-2xl">{LABELS.title}</h1>
+            <div className="flex items-center gap-1 rounded-lg bg-mist-light p-1">
+              {RANGES.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    range === r
+                      ? 'bg-warm-white text-bark shadow-sm'
+                      : 'text-stone hover:text-bark'
+                  }`}
+                >
+                  {r}
+                </button>
               ))}
             </div>
-          </div>
-        </div>
+          </header>
 
-        <div className="rounded-[12px] border border-mist bg-warm-white overflow-hidden">
-          <div className="px-5 py-4 border-b border-mist">
-            <h2 className="font-serif text-[16px] font-bold text-bark">{LABELS.recentLabel}</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="border-b border-mist bg-mist-light">
-                  <th className="text-left px-5 py-3 text-stone font-medium">인터뷰이</th>
-                  <th className="text-left px-4 py-3 text-stone font-medium">요청자</th>
-                  <th className="text-left px-4 py-3 text-stone font-medium">관계</th>
-                  <th className="text-left px-4 py-3 text-stone font-medium">상태</th>
-                  <th className="text-left px-4 py-3 text-stone font-medium">날짜</th>
-                  <th className="text-left px-4 py-3 text-stone font-medium">시간</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-mist">
-                {RECENT_INTERVIEWS.map((row) => (
-                  <tr key={row.id} className="hover:bg-mist-light transition-colors">
-                    <td className="px-5 py-3 font-medium text-bark">{row.interviewee}</td>
-                    <td className="px-4 py-3 text-stone">{row.requester}</td>
-                    <td className="px-4 py-3 text-stone">{row.relationship}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_BADGE[row.status] || ''}`}>
-                        {row.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-stone">{row.date}</td>
-                    <td className="px-4 py-3 text-stone">{row.duration}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* Metric cards */}
+          <section aria-label="핵심 지표">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <MetricCard label={LABELS.totalInterviews} value="127건" change="+23%" changeLabel="지난주 대비" />
+              <MetricCard label={LABELS.totalRecording} value="63.5시간" sub="평균 30분" />
+              <MetricCard label={LABELS.conversionRate} value="34.2%" sub="인터뷰 완료 → 책 주문" />
+              <MetricCard label={LABELS.revenue} value="₩4,920,000" change="+18%" changeLabel="지난달 대비" />
+            </div>
+          </section>
+
+          {/* Charts */}
+          <section aria-label="차트" className="flex flex-col gap-4 lg:flex-row">
+            {/* Daily interviews bar chart */}
+            <div className="min-w-0 flex-1 rounded-xl border border-mist bg-warm-white p-5">
+              <h2 className="text-base font-bold text-bark mb-4">{LABELS.dailyChart}</h2>
+              <div className="h-[240px] w-full">
+                <ResponsiveContainer width="100%" height={240} minWidth={0}>
+                  <BarChart data={DAILY_DATA} barSize={20}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8E0D4" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#9E9585' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: '#9E9585' }} axisLine={false} tickLine={false} width={24} />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: '#E8E0D4', opacity: 0.5 }} />
+                    <Bar dataKey="count" fill="#C4956A" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Revenue line chart */}
+            <div className="min-w-0 flex-1 rounded-xl border border-mist bg-warm-white p-5">
+              <h2 className="text-base font-bold text-bark mb-4">{LABELS.revenueChart}</h2>
+              <div className="h-[240px] w-full">
+                <ResponsiveContainer width="100%" height={240} minWidth={0}>
+                  <LineChart data={REVENUE_DATA}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8E0D4" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#9E9585' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: '#9E9585' }} axisLine={false} tickLine={false} width={32} />
+                    <Tooltip content={<ChartTooltip unit="₩" />} />
+                    <Line type="monotone" dataKey="revenue" stroke="#C4956A" strokeWidth={2.5}
+                      dot={{ fill: '#C4956A', r: 3, strokeWidth: 0 }}
+                      activeDot={{ fill: '#C4956A', r: 5, strokeWidth: 2, stroke: '#FFFDF9' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </section>
+
+          {/* Recent interviews table */}
+          <section aria-label="최근 인터뷰">
+            <div className="rounded-xl border border-mist bg-warm-white overflow-hidden">
+              <div className="px-5 py-4 border-b border-mist">
+                <h2 className="text-base font-bold text-bark">{LABELS.recentLabel}</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-mist bg-mist-light">
+                      <th className="text-left px-5 py-3 text-stone font-medium">날짜</th>
+                      <th className="text-left px-4 py-3 text-stone font-medium">관계</th>
+                      <th className="text-left px-4 py-3 text-stone font-medium">지역</th>
+                      <th className="text-left px-4 py-3 text-stone font-medium">소요시간</th>
+                      <th className="text-left px-4 py-3 text-stone font-medium">상태</th>
+                      <th className="text-right px-4 py-3 text-stone font-medium">책주문</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-mist">
+                    {RECENT_INTERVIEWS.map((row, i) => (
+                      <tr key={i} className="hover:bg-mist-light transition-colors">
+                        <td className="px-5 py-3 text-stone">{row.date}</td>
+                        <td className="px-4 py-3 font-medium text-bark">{row.relation}</td>
+                        <td className="px-4 py-3 text-stone">{row.region}</td>
+                        <td className="px-4 py-3 text-stone">{row.duration}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[row.status] || ''}`}>
+                            {row.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium">
+                          {row.bookOrder ?? <span className="text-stone">-</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          {/* Insights */}
+          <section aria-label="데이터 인사이트">
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-bark">{LABELS.insightsLabel}</h2>
+            </div>
+            <div className="flex flex-col gap-4 lg:flex-row">
+              {/* Generation donut */}
+              <div className="min-w-0 flex-1 rounded-xl border border-mist bg-warm-white p-5">
+                <h3 className="text-base font-bold text-bark mb-4">{LABELS.generationLabel}</h3>
+                <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                  <div className="h-[200px] w-[200px] shrink-0">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <PieChart>
+                        <Pie data={GENERATION_DATA} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value" strokeWidth={0}>
+                          {GENERATION_DATA.map((entry, i) => (
+                            <Cell key={`cell-${i}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(v) => [`${v}%`]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {GENERATION_DATA.map((item) => (
+                      <div key={item.name} className="flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: item.color }} />
+                        <span className="text-sm text-bark">{item.name}</span>
+                        <span className="text-sm font-semibold text-bark">{item.value}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Topic frequency horizontal bar */}
+              <div className="min-w-0 flex-1 rounded-xl border border-mist bg-warm-white p-5">
+                <h3 className="text-base font-bold text-bark mb-4">{LABELS.topicLabel}</h3>
+                <div className="h-[200px] w-full">
+                  <ResponsiveContainer width="100%" height={200} minWidth={0}>
+                    <BarChart data={TOPIC_DATA} layout="vertical" margin={{ left: 0, right: 16 }} barSize={16}>
+                      <XAxis type="number" domain={[0, 100]} hide />
+                      <YAxis type="category" dataKey="topic" width={130} tick={{ fontSize: 12, fill: '#2C2418' }} axisLine={false} tickLine={false} />
+                      <Tooltip content={<TopicTooltip />} cursor={{ fill: '#E8E0D4', opacity: 0.3 }} />
+                      <Bar dataKey="percent" fill="#C4956A" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </section>
+
         </div>
-      </main>
+      </div>
+
       <footer className="py-6 text-center border-t border-mist">
         <a href="/" className="text-[12px] text-stone hover:text-bark transition-colors">🧵 실타래</a>
       </footer>

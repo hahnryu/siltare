@@ -6,7 +6,7 @@ import { ChatMessage } from '@/components/ChatMessage';
 import { MicButton } from '@/components/MicButton';
 
 const LABELS = {
-  logo: '🧵 실타래',
+  logo: '실타래',
   inputPlaceholder: '메시지를 입력하세요...',
   sendBtn: '전송',
   endBtn: '오늘은 여기까지',
@@ -127,36 +127,57 @@ export default function InterviewPage() {
     router.push(`/interview/${id}/complete`);
   };
 
+  // Progress: loosely tied to message count (max 20 exchanges = 100%)
+  const progress = Math.min(100, messages.length * 5);
+
   return (
-    <div className="flex flex-col min-h-dvh bg-cream">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-cream/90 backdrop-blur border-b border-mist px-4 py-3 flex items-center justify-between">
-        <span className="font-serif text-[14px] text-bark">{LABELS.logo}</span>
-        <span className="text-[13px] text-stone font-mono">{formatTime(elapsed)}</span>
-        <button
-          onClick={() => setShowEndModal(true)}
-          className="text-[13px] text-stone border border-mist rounded-[6px] px-3 py-1.5 hover:bg-mist-light transition-colors"
+    <div className="flex h-dvh flex-col bg-cream">
+      {/* Top bar */}
+      <header className="flex-shrink-0 bg-cream/90 backdrop-blur">
+        <div className="flex items-center justify-between px-5 py-3">
+          <span className="font-mono text-sm tabular-nums text-stone">{formatTime(elapsed)}</span>
+          <span className="font-serif text-[17px] tracking-tight text-bark">{LABELS.logo}</span>
+          <button
+            onClick={() => setShowEndModal(true)}
+            className="text-[13px] text-stone border border-mist rounded-[6px] px-3 py-1.5 hover:bg-mist-light transition-colors"
+          >
+            {LABELS.endBtn}
+          </button>
+        </div>
+        {/* Amber progress bar */}
+        <div
+          className="h-[2px] bg-mist"
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="대화 진행률"
         >
-          {LABELS.endBtn}
-        </button>
+          <div
+            className="h-full bg-amber transition-all duration-700 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </header>
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-4 max-w-[520px] mx-auto w-full">
-        {messages.map((msg, i) => (
-          <ChatMessage key={i} role={msg.role} content={msg.content} />
-        ))}
-        <div ref={messagesEndRef} />
+      <main className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="mx-auto flex max-w-lg flex-col gap-4">
+          {messages.map((msg, i) => (
+            <ChatMessage key={i} role={msg.role} content={msg.content} />
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
       </main>
 
       {/* Input area */}
-      <div className="sticky bottom-0 bg-cream border-t border-mist px-4 py-4">
-        <div className="max-w-[520px] mx-auto flex flex-col items-center gap-4">
+      <footer className="flex-shrink-0 border-t border-mist/50 bg-cream pb-6">
+        <div className="mx-auto flex max-w-lg flex-col items-center gap-3 px-4 pt-5">
           <MicButton
             onTranscription={(text) => sendMessage(text)}
             disabled={streaming}
           />
-          <div className="flex gap-2 w-full">
+          <div className="flex gap-2 w-full mt-2">
             <input
               type="text"
               value={input}
@@ -180,7 +201,7 @@ export default function InterviewPage() {
             </button>
           </div>
         </div>
-      </div>
+      </footer>
 
       {/* End modal */}
       {showEndModal && (

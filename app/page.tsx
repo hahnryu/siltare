@@ -24,7 +24,7 @@ const LABELS = {
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="flex min-h-svh flex-col bg-cream">
       <Header />
 
       <main className="flex flex-1 flex-col items-center justify-center px-6 py-16">
@@ -32,19 +32,26 @@ export default function HomePage() {
 
           {/* Hero */}
           <section className="flex flex-col items-center text-center">
-            <span className="text-[48px] leading-none select-none" role="img" aria-label="실타래 로고">
+            <span
+              className="text-[56px] leading-none select-none"
+              role="img"
+              aria-label="실타래 로고"
+            >
               {LABELS.logo}
             </span>
-            <h1 className="mt-6 font-serif text-[36px] font-bold leading-tight text-bark text-balance">
+            <h1 className="mt-6 font-serif text-[40px] font-bold leading-tight tracking-tight text-bark text-balance">
               {LABELS.brandName}
             </h1>
             <p className="mt-3 text-[20px] leading-relaxed text-leaf">{LABELS.tagline}</p>
-            <p className="mt-2 text-[18px] leading-relaxed text-leaf">{LABELS.sub}</p>
+            <p className="mt-2 text-[17px] leading-relaxed text-stone">{LABELS.sub}</p>
           </section>
+
+          {/* Divider */}
+          <div className="w-12 h-px bg-mist" aria-hidden="true" />
 
           {/* Description */}
           <section className="mx-auto max-w-[400px] text-center">
-            <p className="text-[16px] leading-relaxed text-stone">
+            <p className="text-[16px] leading-[1.9] text-stone">
               {LABELS.descriptionLines[0]}<br />
               {LABELS.descriptionLines[1]}<br />
               {LABELS.descriptionLines[2]}<br />
@@ -53,11 +60,11 @@ export default function HomePage() {
           </section>
 
           {/* CTA */}
-          <section className="flex w-full flex-col items-center">
+          <section className="flex w-full flex-col items-center gap-0">
             <div className="flex w-full flex-col gap-3">
               <Link
                 href="/request"
-                className="flex h-[56px] w-full items-center justify-center rounded-[6px] bg-bark text-[18px] font-medium text-warm-white transition-colors hover:bg-bark-light"
+                className="flex h-[56px] w-full items-center justify-center rounded-[6px] bg-bark text-[18px] font-medium text-warm-white shadow-sm transition-colors hover:bg-bark-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber"
               >
                 {LABELS.ctaPrimary}
               </Link>
@@ -68,21 +75,29 @@ export default function HomePage() {
                 {LABELS.ctaSecondary}
               </Link>
             </div>
-            <p className="mt-6 text-center text-[14px] leading-relaxed text-stone">{LABELS.bottom}</p>
+            <p className="mt-6 text-center text-[14px] leading-relaxed text-stone">
+              {LABELS.bottom}
+            </p>
           </section>
 
         </div>
 
         {/* Footer */}
-        <div className="mt-20 md:mt-24">
-          <footer className="flex flex-col items-center gap-1 text-center">
-            <Link href="/" className="text-[13px] font-medium text-leaf hover:text-bark transition-colors">
+        <div className="mt-20 md:mt-28">
+          <footer className="flex flex-col items-center gap-1.5 text-center">
+            <Link
+              href="/"
+              className="text-[13px] font-medium text-leaf hover:text-bark transition-colors"
+            >
               {LABELS.logo} {LABELS.footerBrand}
             </Link>
             <p className="text-[12px] text-stone">{LABELS.footerSub}</p>
             <p className="text-[12px] text-stone">{LABELS.footerCredit}</p>
             <p className="text-[12px] text-stone">{LABELS.footerCollab}</p>
-            <Link href="/dashboard" className="mt-3 text-[11px] text-stone/60 hover:text-stone transition-colors">
+            <Link
+              href="/dashboard"
+              className="mt-4 text-[11px] text-stone/50 hover:text-stone transition-colors"
+            >
               {LABELS.admin}
             </Link>
           </footer>
