@@ -2,23 +2,36 @@
 import { NextRequest } from 'next/server';
 import { getInterview, updateInterview } from '@/lib/store';
 import { generateSystemPrompt } from '@/lib/prompts';
-import { Message } from '@/lib/types';
+import { Interview, Message } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
   try {
-    const { interviewId, message } = await req.json();
+    const { interviewId, message, interviewMeta, clientMessages } = await req.json();
 
-    const interview = await getInterview(interviewId);
+    // Try storage first; fall back to client-provided data (Vercel /tmp not shared across instances)
+    let interview = await getInterview(interviewId);
+
     if (!interview) {
-      return new Response('인터뷰를 찾을 수 없습니다', { status: 404 });
+      if (!interviewMeta) {
+        return new Response('인터뷰를 찾을 수 없습니다', { status: 404 });
+      }
+      // Reconstruct from client-provided metadata and message history
+      interview = {
+        ...interviewMeta,
+        messages: (clientMessages || []).map((m: { role: string; content: string }) => ({
+          role: m.role as 'assistant' | 'user',
+          content: m.content,
+          timestamp: new Date().toISOString(),
+        })),
+      } as Interview;
     }
 
-    // 상태 업데이트
+    // Mark as active (best-effort, don't block on failure)
     if (interview.status === 'pending') {
-      await updateInterview(interviewId, { status: 'active' });
+      updateInterview(interviewId, { status: 'active' }).catch(() => {});
     }
 
-    // 사용자 메시지 저장
+    // Add user message to history
     if (message) {
       const userMsg: Message = {
         role: 'user',
@@ -28,13 +41,11 @@ export async function POST(req: NextRequest) {
       interview.messages.push(userMsg);
     }
 
-    // 시스템 프롬프트 생성
+    // Build system prompt and OpenAI messages
     const systemPrompt = generateSystemPrompt(interview);
-
-    // OpenAI API 호출
     const openaiMessages = [
       { role: 'system' as const, content: systemPrompt },
-      ...interview.messages.map(m => ({
+      ...interview.messages.map((m) => ({
         role: m.role as 'assistant' | 'user',
         content: m.content,
       })),
@@ -44,7 +55,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
         model: 'gpt-4o',
@@ -59,10 +70,10 @@ export async function POST(req: NextRequest) {
       return new Response('AI 응답 실패', { status: 500 });
     }
 
-    // SSE 스트리밍 응답
     const reader = openaiRes.body.getReader();
     const decoder = new TextDecoder();
     let fullContent = '';
+    const savedInterview = interview; // stable ref for closure
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -73,7 +84,6 @@ export async function POST(req: NextRequest) {
           const chunk = decoder.decode(value);
           controller.enqueue(new TextEncoder().encode(chunk));
 
-          // 전체 응답 수집
           const lines = chunk.split('\n');
           for (const line of lines) {
             if (line.startsWith('data: ') && line !== 'data: [DONE]') {
@@ -82,21 +92,21 @@ export async function POST(req: NextRequest) {
                 const delta = parsed.choices?.[0]?.delta?.content;
                 if (delta) fullContent += delta;
               } catch {
-                // skip
+                // skip malformed SSE chunks
               }
             }
           }
         }
 
-        // 어시스턴트 메시지 저장
+        // Save assistant message (best-effort, don't fail the stream)
         if (fullContent) {
           const assistantMsg: Message = {
             role: 'assistant',
             content: fullContent,
             timestamp: new Date().toISOString(),
           };
-          interview.messages.push(assistantMsg);
-          await updateInterview(interviewId, { messages: interview.messages });
+          savedInterview.messages.push(assistantMsg);
+          updateInterview(interviewId, { messages: savedInterview.messages }).catch(() => {});
         }
 
         controller.close();

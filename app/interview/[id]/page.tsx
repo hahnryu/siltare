@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChatMessage } from '@/components/ChatMessage';
 import { MicButton } from '@/components/MicButton';
+import { Interview } from '@/lib/types';
 
 const LABELS = {
   logo: '실타래',
@@ -39,6 +40,26 @@ export default function InterviewPage() {
   const [initialized, setInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Refs for stable access inside async callbacks (avoids stale closures)
+  const messagesRef = useRef<Msg[]>([]);
+  const interviewMetaRef = useRef<Interview | null>(null);
+
+  // Keep messagesRef in sync with state
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  // Fetch interview metadata on mount; stored in ref for fallback on Vercel
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/create-interview?id=${id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: Interview | null) => {
+        if (data) interviewMetaRef.current = data;
+      })
+      .catch(() => {});
+  }, [id]);
+
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -53,6 +74,9 @@ export default function InterviewPage() {
   const sendMessage = useCallback(async (userText: string) => {
     if (streaming) return;
 
+    // Capture messages before state update — these become clientMessages fallback
+    const prevMessages = messagesRef.current;
+
     if (userText.trim()) {
       setMessages((prev) => [...prev, { role: 'user', content: userText }]);
     }
@@ -62,11 +86,21 @@ export default function InterviewPage() {
     let assistantContent = '';
     setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
+    // Build client-side history: previous messages + current user message (if any)
+    const clientMessages: Msg[] = userText.trim()
+      ? [...prevMessages, { role: 'user', content: userText }]
+      : [...prevMessages];
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interviewId: id, message: userText }),
+        body: JSON.stringify({
+          interviewId: id,
+          message: userText,
+          interviewMeta: interviewMetaRef.current ?? undefined,
+          clientMessages,
+        }),
       });
 
       if (!res.ok || !res.body) throw new Error('chat failed');
@@ -93,7 +127,7 @@ export default function InterviewPage() {
                 });
               }
             } catch {
-              // skip
+              // skip malformed SSE chunks
             }
           }
         }
