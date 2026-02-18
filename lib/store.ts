@@ -13,18 +13,11 @@
  *   SUPABASE_SERVICE_ROLE_KEY — service_role secret (RLS 우회)
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 import { Interview } from './types';
 
-function getClient(): SupabaseClient {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not set');
-  return createClient(url, key);
-}
-
 export async function saveInterview(interview: Interview): Promise<void> {
-  const { error } = await getClient()
+  const { error } = await supabase
     .from('interviews')
     .upsert({ id: interview.id, data: interview }, { onConflict: 'id' });
   if (error) throw new Error(`saveInterview failed: ${error.message}`);
@@ -32,7 +25,7 @@ export async function saveInterview(interview: Interview): Promise<void> {
 
 export async function getInterview(id: string): Promise<Interview | null> {
   try {
-    const { data, error } = await getClient()
+    const { data, error } = await supabase
       .from('interviews')
       .select('data')
       .eq('id', id)
