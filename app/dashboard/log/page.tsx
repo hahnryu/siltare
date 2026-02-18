@@ -177,7 +177,7 @@ export default function DevLogPage() {
                 <div key={entry.date} className="grid grid-cols-[100px_1fr] gap-4">
                   <p className="pt-0.5 text-[13px] font-medium text-amber">{entry.date}</p>
                   <ul className="flex flex-col gap-1.5">
-                    {entry.entries.map((line) => (
+                    {entry.items.map((line) => (
                       <li key={line} className="flex items-start gap-2 text-[14px] text-stone">
                         <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-mist" />
                         {line}
