@@ -63,6 +63,10 @@ h1, h2, h3 {
   color: var(--warm-white);
 }
 
+/* Hide scrollbar (gallery) */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
 /* Fade-up animation (IntersectionObserver) */
 .fade-up {
   opacity: 0;
