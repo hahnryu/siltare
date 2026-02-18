@@ -8,6 +8,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        serif: ["'Noto Serif KR'", 'Georgia', 'serif'],
+        'serif-en': ["'Cormorant Garamond'", 'Georgia', 'serif'],
+      },
       colors: {
         cream: '#FAF6F0',
         'warm-white': '#FFFDF9',
