@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;700;900&family=Noto+Sans+KR:wght@300;400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+
+:root {
+  --cream: #FAF6F0;
+  --warm-white: #FFFDF9;
+  --bark: #2C2418;
+  --bark-light: #4A3F30;
+  --amber: #C4956A;
+  --amber-light: #D4AD84;
+  --leaf: #8B7355;
+  --mist: #E8E0D4;
+  --mist-light: #F0EBE3;
+  --stone: #9E9585;
+  --stone-light: #B8B0A2;
+}
+
+body {
+  font-family: 'Noto Sans KR', -apple-system, sans-serif;
+  background: var(--cream);
+  color: var(--bark);
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: 'Noto Serif KR', Georgia, serif;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--warm-white);
+}
