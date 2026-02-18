@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
 const LABELS = {
   logo: '🧵',
@@ -82,27 +83,13 @@ export default function HomePage() {
 
         </div>
 
-        {/* Footer */}
-        <div className="mt-20 md:mt-28">
-          <footer className="flex flex-col items-center gap-1.5 text-center">
-            <Link
-              href="/"
-              className="text-[13px] font-medium text-leaf hover:text-bark transition-colors"
-            >
-              {LABELS.logo} {LABELS.footerBrand}
-            </Link>
-            <p className="text-[12px] text-stone">{LABELS.footerSub}</p>
-            <p className="text-[12px] text-stone">{LABELS.footerCredit}</p>
-            <p className="text-[12px] text-stone">{LABELS.footerCollab}</p>
-            <Link
-              href="/dashboard"
-              className="mt-4 text-[11px] text-stone/50 hover:text-stone transition-colors"
-            >
-              {LABELS.admin}
-            </Link>
-          </footer>
-        </div>
       </main>
+      <Footer />
+      <div className="text-center py-2">
+        <Link href="/dashboard" className="text-[11px] text-stone/40 hover:text-stone transition-colors">
+          {LABELS.admin}
+        </Link>
+      </div>
     </div>
   );
 }

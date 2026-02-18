@@ -8,11 +8,6 @@ import { Header } from '@/components/Header';
 const LABELS = {
   loading: '잠시만 기다려주세요...',
   notFound: '링크를 찾을 수 없습니다.',
-  bodyLine1: '편하게 이야기해 주시면 됩니다.',
-  bodyLine2: '질문을 드리면 생각나시는 대로 말씀해 주세요.',
-  bodyLine3: '정답도 없고, 틀린 대답도 없습니다.',
-  infoLine1: '30분 정도면 충분합니다.',
-  infoLine2: '중간에 쉬셔도 되고, 다음에 이어서 하셔도 됩니다.',
   consentLabel: '대화 내용이 기록되는 것에 동의합니다.',
   startBtn: '동의하고 시작하기',
   footerNote: '이야기는 안전하게 보관되며, 요청자에게만 전달됩니다.',
@@ -72,24 +67,21 @@ export default function IntervieweeLandingPage() {
             aria-label="이야기 안내"
           >
             <h1 className="font-serif text-[24px] font-bold leading-relaxed tracking-tight text-bark">
-              {requesterName}님이<br />
-              {intervieweeName}의 이야기를<br className="hidden xs:block" /> 듣고 싶어합니다.
+              {intervieweeName}님,<br />
+              {requesterName}님이 이야기를 여쭙고 싶어합니다.
             </h1>
 
             <hr className="my-6 border-mist" />
 
-            <p className="text-[16px] leading-[1.8] text-leaf">
-              {LABELS.bodyLine1}<br />
-              {LABELS.bodyLine2}<br />
-              {LABELS.bodyLine3}
-            </p>
-
-            <div className="h-4" />
-
-            <p className="text-[15px] leading-[1.8] text-stone">
-              {LABELS.infoLine1}<br />
-              {LABELS.infoLine2}
-            </p>
+            <div className="flex flex-col gap-3 text-[16px] leading-[1.8] text-leaf">
+              <p>{requesterName}님의 부탁을 받은 AI가 질문을 드립니다.</p>
+              <p>말씀하시는 동안 마이크 버튼을 꾹 누르고, 말씀을 마치시면 손가락을 떼시면 됩니다.</p>
+              <p>여러 차례에 나눠서 진행하실 수 있습니다. 편하실 때 이어서 하세요.</p>
+              <p className="text-[15px] text-stone">
+                AI가 고유명사 등을 제대로 알아듣지 못한 경우, 추후 {requesterName}님과 함께 수정하실 수 있습니다.
+              </p>
+              <p className="text-[15px] text-stone">정답도 없고, 틀린 대답도 없습니다. 편하게 이야기해 주세요.</p>
+            </div>
           </div>
 
           {/* Consent checkbox */}

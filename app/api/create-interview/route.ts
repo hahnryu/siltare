@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     await saveInterview(interview);
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://siltare.app';
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://siltare.app').replace(/\/+$/, '');
     return NextResponse.json({
       id,
       link: `${baseUrl}/i/${id}`,

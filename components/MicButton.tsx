@@ -107,8 +107,10 @@ export function MicButton({ onTranscription, disabled }: MicButtonProps) {
           />
         )}
         <time
-          className={`font-sans text-sm tabular-nums transition-colors duration-300 ${
-            isRecording ? 'text-amber' : 'text-stone'
+          className={`tabular-nums transition-all duration-300 ${
+            isRecording
+              ? 'text-2xl font-bold text-amber'
+              : 'font-sans text-sm text-stone'
           }`}
           aria-label={`경과 시간 ${formatTime(elapsed)}`}
         >

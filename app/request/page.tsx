@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { recommendedQuestions } from '@/lib/questions';
 import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
 const TOTAL_STEPS = 4;
 
@@ -158,6 +159,7 @@ export default function RequestPage() {
   const [requesterEmail, setRequesterEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
+  const [generatedId, setGeneratedId] = useState('');
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
 
@@ -221,6 +223,7 @@ export default function RequestPage() {
       const data = await res.json();
       if (data.link) {
         setGeneratedLink(data.link);
+        if (data.id) setGeneratedId(data.id);
         setStep(5);
       } else {
         setError(LABELS.error);
@@ -305,22 +308,31 @@ export default function RequestPage() {
                   </div>
                   <div className="flex flex-col gap-2">
                     <p className="text-base font-medium leading-relaxed text-bark">
-                      {requesterName ? `${requesterName}님이 당신의 이야기를 듣고 싶어합니다.` : 'OO님이 당신의 이야기를 듣고 싶어합니다.'}
+                      {intervieweeName
+                        ? `${intervieweeName}님, ${requesterName}님이 이야기를 여쭙고 싶어합니다.`
+                        : `${requesterName}님이 이야기를 여쭙고 싶어합니다.`}
                     </p>
-                    <p className="text-sm text-stone">{LABELS.resultPreviewTime}</p>
+                    <p className="text-sm text-stone">편하실 때 시작하시면 됩니다.</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <button
-              onClick={() => router.push('/')}
-              className="w-full h-[44px] rounded-[6px] border border-mist text-[15px] text-bark transition-colors hover:bg-mist-light"
+              onClick={() => router.push(`/archive/${generatedId}`)}
+              className="w-full h-[52px] rounded-[6px] bg-bark text-[16px] font-medium text-warm-white transition-colors hover:bg-bark-light"
             >
-              {LABELS.home}
+              녹취 현황 확인하기
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="w-full h-[40px] text-[14px] text-stone/70 hover:text-stone transition-colors"
+            >
+              처음으로 돌아가기
             </button>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }

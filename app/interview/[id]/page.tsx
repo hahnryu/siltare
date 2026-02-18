@@ -65,11 +65,13 @@ export default function InterviewPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Timer
+  // Timer — starts only after first message arrives (not on page load)
+  const hasMessages = messages.length > 0;
   useEffect(() => {
+    if (!hasMessages) return;
     const timer = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [hasMessages]);
 
   const sendMessage = useCallback(async (userText: string) => {
     if (streaming) return;
@@ -169,14 +171,12 @@ export default function InterviewPage() {
       {/* Top bar */}
       <header className="flex-shrink-0 bg-cream/90 backdrop-blur">
         <div className="flex items-center justify-between px-5 py-3">
-          <span className="font-mono text-sm tabular-nums text-stone">{formatTime(elapsed)}</span>
+          <div className="flex flex-col items-start">
+            <span className="text-[9px] uppercase tracking-widest text-stone/60">경과</span>
+            <span className="font-mono text-sm tabular-nums text-stone">{formatTime(elapsed)}</span>
+          </div>
           <span className="font-serif text-[17px] tracking-tight text-bark">{LABELS.logo}</span>
-          <button
-            onClick={() => setShowEndModal(true)}
-            className="text-[13px] text-stone border border-mist rounded-[6px] px-3 py-1.5 hover:bg-mist-light transition-colors"
-          >
-            {LABELS.endBtn}
-          </button>
+          <div className="w-[72px]" aria-hidden="true" />
         </div>
         {/* Amber progress bar */}
         <div
@@ -234,6 +234,12 @@ export default function InterviewPage() {
               {LABELS.sendBtn}
             </button>
           </div>
+          <button
+            onClick={() => setShowEndModal(true)}
+            className="mt-1 text-[13px] text-stone/60 hover:text-stone transition-colors"
+          >
+            {LABELS.endBtn}
+          </button>
         </div>
       </footer>
 

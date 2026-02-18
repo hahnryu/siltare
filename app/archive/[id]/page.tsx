@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
 // ---- AudioPlayer ----
 const AUDIO_BAR_COUNT = 48;
@@ -303,11 +304,7 @@ export default function ArchivePage() {
         </section>
       </main>
 
-      <footer className="border-t border-mist py-8 text-center">
-        <a href="/" className="font-serif text-xs text-stone hover:text-bark transition-colors">
-          🧵 실타래 &mdash; {LABELS.footerNote}
-        </a>
-      </footer>
+      <Footer />
     </div>
   );
 }
