@@ -27,6 +27,7 @@ function formatTime(sec: number) {
 interface Msg {
   role: 'assistant' | 'user';
   content: string;
+  timestamp?: string;
 }
 
 export default function InterviewPage() {
@@ -80,13 +81,13 @@ export default function InterviewPage() {
     const prevMessages = messagesRef.current;
 
     if (userText.trim()) {
-      setMessages((prev) => [...prev, { role: 'user', content: userText }]);
+      setMessages((prev) => [...prev, { role: 'user', content: userText, timestamp: new Date().toISOString() }]);
     }
     setInput('');
     setStreaming(true);
 
     let assistantContent = '';
-    setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+    setMessages((prev) => [...prev, { role: 'assistant', content: '', timestamp: new Date().toISOString() }]);
 
     // Build client-side history: previous messages + current user message (if any)
     const clientMessages: Msg[] = userText.trim()
@@ -124,7 +125,7 @@ export default function InterviewPage() {
                 assistantContent += delta;
                 setMessages((prev) => {
                   const next = [...prev];
-                  next[next.length - 1] = { role: 'assistant', content: assistantContent };
+                  next[next.length - 1] = { ...next[next.length - 1], content: assistantContent };
                   return next;
                 });
               }
@@ -198,7 +199,7 @@ export default function InterviewPage() {
       <main className="flex-1 overflow-y-auto px-4 py-6">
         <div className="mx-auto flex max-w-lg flex-col gap-4">
           {messages.map((msg, i) => (
-            <ChatMessage key={i} role={msg.role} content={msg.content} />
+            <ChatMessage key={i} role={msg.role} content={msg.content} timestamp={msg.timestamp} />
           ))}
           <div ref={messagesEndRef} />
         </div>
