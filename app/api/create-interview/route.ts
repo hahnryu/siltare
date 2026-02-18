@@ -1,7 +1,7 @@
 // TODO: add auth check here
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import { saveInterview, getInterview } from '@/lib/store';
+import { createInterview, getInterview } from '@/lib/store';
 import { Interview } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       messages: [],
     };
 
-    await saveInterview(interview);
+    await createInterview(interview);
 
     const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://siltare.app').replace(/\/+$/, '');
     return NextResponse.json({
