@@ -48,6 +48,9 @@ export default function DashboardLoginPage() {
               대시보드 로그인
             </h1>
             <p className="mt-1 text-[14px] text-stone">관리자 전용 페이지입니다</p>
+            <p className="mt-3 text-[13px] text-stone/60 font-mono bg-mist-light rounded-[6px] px-4 py-2">
+              ID: bts &nbsp;·&nbsp; PW: arirang2026
+            </p>
           </div>
 
           <form

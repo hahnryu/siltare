@@ -14,11 +14,11 @@ export function Footer() {
           {/* Links */}
           <nav className="flex items-center gap-4 text-[13px] text-stone">
             <Link href="/inspiration" className="hover:text-bark transition-colors">
-              Inspiration
+              소개
             </Link>
             <span className="text-mist" aria-hidden>|</span>
             <Link href="/vision" className="hover:text-bark transition-colors">
-              Vision &amp; Roadmap
+              로드맵
             </Link>
             <span className="text-mist" aria-hidden>|</span>
             <Link href="/request" className="hover:text-bark transition-colors">
@@ -28,14 +28,14 @@ export function Footer() {
 
           {/* Credits */}
           <p className="text-[12px] text-stone">
-            A NodeONE Product · 뿌리깊은나무 연구소{' '}
+            A NodeONE Product ·{' '}
             <a
-              href="https://rooted.center"
+              href="https://www.rooted.center"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-bark transition-colors"
             >
-              rooted.center
+              뿌리깊은나무 연구소
             </a>
           </p>
           <p className="text-[12px] text-stone/70">© 2026 NodeONE Inc.</p>

@@ -39,19 +39,25 @@ export function Header() {
             href="/inspiration"
             className="text-[14px] text-stone hover:text-bark transition-colors"
           >
-            Inspiration
+            소개
           </Link>
           <Link
             href="/vision"
             className="text-[14px] text-stone hover:text-bark transition-colors"
           >
-            Vision
+            로드맵
           </Link>
           <Link
             href="/dashboard/log"
             className="text-[14px] text-stone hover:text-bark transition-colors"
           >
             개발 로그
+          </Link>
+          <Link
+            href="/dashboard"
+            className="text-[14px] text-stone hover:text-bark transition-colors"
+          >
+            관리자
           </Link>
           <Link
             href="/request"
