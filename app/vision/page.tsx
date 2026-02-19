@@ -113,7 +113,6 @@ const CREDENTIALS = [
   { label: '구조', body: 'HOMP (인프라) → 실타래 (제품) → 뿌리깊은나무 연구소 (연구). 세 레이어가 하나의 비전 아래.' },
   { label: '기술', body: 'Node1 Inc. (2018~). EOS 블록프로듀서. 다중 프로토콜 노드 운영. AI alignment 특허 출원 (RSL, 2025.12). 온체인 원본성 증명은 기존 인프라 위에서.' },
   { label: '실행', body: 'TEDxSeoul 창립 (2009). D.CAMP 창립멤버. 토큰 이코노미 설계. AI 정책 프레임워크 설계 (국회).' },
-  { label: '인연', body: '김서준 대표와 2019 버닝맨.' },
 ];
 
 const FOUNDER_TITLES = [
