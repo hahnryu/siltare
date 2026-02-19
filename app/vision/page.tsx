@@ -315,7 +315,7 @@ export default function VisionPage() {
           <h2 className="font-serif text-[clamp(24px,3.5vw,34px)] font-bold text-bark mb-8">Human-Origin Memory Protocol</h2>
           <div className="max-w-[640px] flex flex-col gap-5 text-[16px] leading-[2] text-stone font-light">
             <p>실타래는 HOMP(Human-Origin Memory Protocol)의 첫 번째 애플리케이션입니다.</p>
-            <p>모든 인터뷰에서 언급되는 인물, 장소, 시간, 사건이 온톨로지로 연결됩니다. 인터뷰 A에 등장하는 "김영수"와 인터뷰 B에 등장하는 "김영수"가 같은 사람이면, 두 서사가 연결됩니다. 이것이 Human Voice Graph입니다.</p>
+            <p>모든 인터뷰에서 언급되는 인물, 장소, 시간, 사건이 온톨로지로 연결됩니다. 인터뷰 A의 "부산 영도 피난"과 인터뷰 B의 "부산 영도 피난"이 같은 장소와 시간이면, 두 서사가 엮입니다. 이것이 Human Voice Graph입니다.</p>
             <p>인터뷰가 쌓일수록 그래프가 풍부해지고, 데이터의 가치가 비선형으로 증가합니다. Human Voice Graph의 종착점은 개별 가족의 기록이 아니라, 인류 공통 서사의 지도입니다.</p>
           </div>
         </FadeSection>
