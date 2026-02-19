@@ -38,7 +38,12 @@ export function Footer() {
               rooted.center
             </a>
           </p>
-          <p className="text-[12px] text-stone/70">© 2026 Node1 Inc.</p>
+          <p className="text-[12px] text-stone/70">© 2026 NodeONE Inc.</p>
+          <p className="text-[11px] text-stone/50 leading-relaxed">
+            노드원 주식회사 | 대표: 류한석<br />
+            사업자등록번호: 195-86-02431<br />
+            서울 강남구 테헤란로70길 12, 402-150 A호
+          </p>
         </div>
       </div>
     </footer>
