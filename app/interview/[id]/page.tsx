@@ -52,17 +52,6 @@ export default function InterviewPage() {
     messagesRef.current = messages;
   }, [messages]);
 
-  // Fetch interview metadata on mount; stored in ref for fallback on Vercel
-  useEffect(() => {
-    if (!id) return;
-    fetch(`/api/create-interview?id=${id}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: Interview | null) => {
-        if (data) interviewMetaRef.current = data;
-      })
-      .catch(() => {});
-  }, [id]);
-
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -148,12 +137,20 @@ export default function InterviewPage() {
     }
   }, [id, streaming]);
 
-  // First message: AI opens the conversation
+  // Fetch interview metadata, then fire first AI message.
+  // Merged into one effect to guarantee interviewMetaRef is populated before sendMessage('').
   useEffect(() => {
-    if (!initialized && id) {
-      setInitialized(true);
-      sendMessage('');
-    }
+    if (!id || initialized) return;
+    setInitialized(true);
+    fetch(`/api/create-interview?id=${id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: Interview | null) => {
+        if (data) interviewMetaRef.current = data;
+      })
+      .catch(() => {})
+      .finally(() => {
+        sendMessage('');
+      });
   }, [id, initialized, sendMessage]);
 
   const handleSend = () => {
