@@ -60,19 +60,21 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   { date: '2/19', items: [
     'F-009 Supabase 전환 완료 (JSON → PostgreSQL)',
-    'Race condition 수정: 인터뷰 첫 메시지 로딩 순서 보장',
+    'F-009 store.ts 플랫 컬럼 방식으로 전면 교체 + lib/supabase.ts 싱글톤 분리',
+    'Race condition 수정: 인터뷰 첫 메시지 메타데이터 로딩 순서 보장',
     '"오늘은 여기까지" → /api/complete 호출 후 /archive 이동 수정',
-    '푸터 사업자 정보 추가',
-    'CLAUDE.md v0.2.0 업데이트',
-    'e2e 테스트 통과: request → 대화 → 완료 → archive → book',
-  ]},
-  { date: '2/19', items: [
     'F-007 아카이브 실제 데이터 연동 완료',
     'F-015 채팅 말풍선 타임스탬프 추가',
     'F-019 대시보드 인증 (ID/PW) 구현',
     'F-022 개발 로그 페이지 구현',
     'F-005 카카오톡 공유 SDK 연동 (도메인 등록 완료)',
-    'F-026~F-028 신규 피드백 등록',
+    'OG 이미지 + favicon 추가 (128×128 PNG)',
+    '/vision 전면 업데이트: HOMP, 크레덴셜, 창업자, 글로벌 비전 등',
+    '헤더: Inspiration → 소개, Vision → 로드맵, 관리자 링크 추가',
+    '푸터: 뿌리깊은나무 연구소 링크, 사업자 정보 추가',
+    '로그인 화면: 심사용 ID/PW 힌트 표시 (bts / arirang2026)',
+    'CLAUDE.md v0.2.0 업데이트',
+    'e2e 테스트 통과: request → 대화 → 완료 → archive → book',
   ]},
   { date: '2/18', items: [
     'F-001~F-004, F-002b 완료 (카피/UX 수정)',
