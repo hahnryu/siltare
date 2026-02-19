@@ -15,6 +15,7 @@ const LABELS = {
   saveModalTitle: '오늘의 이야기를 저장합니다.',
   saveModalBody: '이야기는 안전하게 보관됩니다. 언제든 이어서 하실 수 있습니다.',
   saveModalConfirm: '저장하고 나가기',
+  saveModalConfirmLoading: '저장 중...',
   saveModalCancel: '계속하기',
 };
 
@@ -38,6 +39,7 @@ export default function InterviewPage() {
   const [streaming, setStreaming] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [showEndModal, setShowEndModal] = useState(false);
+  const [completing, setCompleting] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -159,9 +161,19 @@ export default function InterviewPage() {
     sendMessage(input.trim());
   };
 
-  const handleEnd = () => {
-    setShowEndModal(false);
-    router.push(`/interview/${id}/complete`);
+  const handleEnd = async () => {
+    if (completing) return;
+    setCompleting(true);
+    try {
+      await fetch('/api/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interviewId: id }),
+      });
+    } catch {
+      // best-effort: proceed to archive even if summary generation fails
+    }
+    router.push(`/archive/${id}`);
   };
 
   // Progress: loosely tied to message count (max 20 exchanges = 100%)
@@ -253,13 +265,15 @@ export default function InterviewPage() {
             <div className="flex flex-col gap-2">
               <button
                 onClick={handleEnd}
-                className="w-full h-[52px] rounded-[6px] bg-bark text-warm-white text-[16px] font-medium hover:bg-bark-light transition-colors"
+                disabled={completing}
+                className="w-full h-[52px] rounded-[6px] bg-bark text-warm-white text-[16px] font-medium hover:bg-bark-light transition-colors disabled:opacity-60"
               >
-                {LABELS.saveModalConfirm}
+                {completing ? LABELS.saveModalConfirmLoading : LABELS.saveModalConfirm}
               </button>
               <button
                 onClick={() => setShowEndModal(false)}
-                className="w-full h-[44px] rounded-[6px] border border-mist text-bark text-[15px] hover:bg-mist-light transition-colors"
+                disabled={completing}
+                className="w-full h-[44px] rounded-[6px] border border-mist text-bark text-[15px] hover:bg-mist-light transition-colors disabled:opacity-40"
               >
                 {LABELS.saveModalCancel}
               </button>
