@@ -31,7 +31,7 @@ export const FEEDBACK_ITEMS: FeedbackItem[] = [
 
   // 단기 - 완료
   { id: "F-007", title: "아카이브 데이터 연동", page: "/archive/{id}", status: "done", priority: "short", completedAt: "2/19", description: "하드코딩 → 실제 인터뷰 데이터 렌더링" },
-  { id: "F-009", title: "DB 전환 (Supabase)", page: "전체", status: "done", priority: "short", completedAt: "2/20", description: "JSON 파일 → Supabase PostgreSQL" },
+  { id: "F-009", title: "DB 전환 (Supabase)", page: "전체", status: "done", priority: "short", completedAt: "2/19", description: "JSON 파일 → Supabase PostgreSQL" },
   { id: "F-019", title: "대시보드 인증", page: "/dashboard", status: "done", priority: "short", completedAt: "2/19", description: "ID/PW 로그인 보호" },
   { id: "F-022", title: "개발 로그 페이지", page: "/dashboard/log", status: "done", priority: "short", completedAt: "2/19", description: "피드백 항목 웹 실시간 표시" },
 
@@ -58,7 +58,7 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
-  { date: '2/20', items: [
+  { date: '2/19', items: [
     'F-009 Supabase 전환 완료 (JSON → PostgreSQL)',
     'Race condition 수정: 인터뷰 첫 메시지 로딩 순서 보장',
     '"오늘은 여기까지" → /api/complete 호출 후 /archive 이동 수정',
