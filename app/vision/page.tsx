@@ -116,8 +116,7 @@ const CREDENTIALS = [
 ];
 
 const FOUNDER_TITLES = [
-  'Node1 Inc. CEO',
-  '류성룡 16세손',
+  'NodeONE Inc. CEO',
   'TEDxSeoul 창립자',
   'D.CAMP 창립멤버',
   'Sofia University 트랜스퍼스널 심리학',
@@ -344,14 +343,22 @@ export default function VisionPage() {
         {/* 12. Founder */}
         <FadeSection>
           <p className="text-[11px] uppercase tracking-[0.18em] text-stone mb-8">Founder</p>
-          <h2 className="font-serif text-[24px] font-bold text-bark mb-3">류한 Hahn Ryu</h2>
+          <h2 className="font-serif text-[24px] font-bold text-bark mb-1">류한석 Hahn Ryu</h2>
+          <p className="text-[14px] text-stone font-light mb-4">류성룡 16세손</p>
           <div className="flex flex-col text-[14px] text-stone font-light leading-[1.9]">
             {FOUNDER_TITLES.map((t) => (
               <span key={t}>{t}</span>
             ))}
           </div>
           <p className="mt-4 text-[15px] text-stone font-light italic">아버지의 이야기를 기록하고 싶어서 만들었습니다.</p>
-          <p className="mt-3 text-[14px] text-stone font-light">deeply@rooted.center</p>
+          <a
+            href="https://hahnryu.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-block text-[14px] text-stone font-light hover:text-bark transition-colors"
+          >
+            hahnryu.com
+          </a>
         </FadeSection>
 
         {/* CTA */}
