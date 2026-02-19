@@ -343,8 +343,7 @@ export default function VisionPage() {
         {/* 12. Founder */}
         <FadeSection>
           <p className="text-[11px] uppercase tracking-[0.18em] text-stone mb-8">Founder</p>
-          <h2 className="font-serif text-[24px] font-bold text-bark mb-1">류한석 Hahn Ryu</h2>
-          <p className="text-[14px] text-stone font-light mb-4">류성룡 16세손</p>
+          <h2 className="font-serif text-[24px] font-bold text-bark mb-4">류한석 Hahn Ryu</h2>
           <div className="flex flex-col text-[14px] text-stone font-light leading-[1.9]">
             {FOUNDER_TITLES.map((t) => (
               <span key={t}>{t}</span>
