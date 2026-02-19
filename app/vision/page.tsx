@@ -111,7 +111,7 @@ const GLOBAL_ITEMS = [
 const CREDENTIALS = [
   { label: '계보', body: '1976년 뿌리깊은나무 민중 자서전 20권. 이름 없는 이들의 육성을 토박이말로 기록한 한국 구술사의 전범. 실타래는 이 기록의 디지털 계승.', link: { href: 'https://rooted.center', text: '뿌리깊은나무 연구소 rooted.center' } },
   { label: '구조', body: 'HOMP (인프라) → 실타래 (제품) → 뿌리깊은나무 연구소 (연구). 세 레이어가 하나의 비전 아래.' },
-  { label: '기술', body: 'Node1 Inc. (2018~). EOS 블록프로듀서. 다중 프로토콜 노드 운영. AI alignment 특허 출원 (RSL, 2025.12). 온체인 원본성 증명은 기존 인프라 위에서.' },
+  { label: '기술', body: 'NodeONE Inc. (2018~). 다중 프로토콜 노드 운영.\nAI Alignment 특허 출원: Representation Stability Layer. 온체인 원본성 증명은 기존 인프라 위에서.' },
   { label: '실행', body: 'TEDxSeoul 창립 (2009). D.CAMP 창립멤버. 토큰 이코노미 설계. AI 정책 프레임워크 설계 (국회).' },
 ];
 
@@ -328,7 +328,9 @@ export default function VisionPage() {
               <div key={c.label} className="grid grid-cols-[80px_1fr] gap-5 py-4">
                 <span className="text-[11px] font-medium tracking-[0.12em] uppercase text-stone pt-0.5">{c.label}</span>
                 <div className="text-[15px] text-stone font-light leading-[1.7]">
-                  {c.body}
+                  {c.body.split('\n').map((line, i, arr) => (
+                    <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+                  ))}
                   {c.link && (
                     <><br /><a href={c.link.href} target="_blank" rel="noopener noreferrer" className="text-stone underline underline-offset-3 hover:text-bark transition-colors">{c.link.text}</a></>
                   )}
