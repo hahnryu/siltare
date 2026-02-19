@@ -60,7 +60,11 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   { date: '2/20', items: [
     'F-009 Supabase 전환 완료 (JSON → PostgreSQL)',
-    'CLAUDE.md 최신 상태 반영',
+    'Race condition 수정: 인터뷰 첫 메시지 로딩 순서 보장',
+    '"오늘은 여기까지" → /api/complete 호출 후 /archive 이동 수정',
+    '푸터 사업자 정보 추가',
+    'CLAUDE.md v0.2.0 업데이트',
+    'e2e 테스트 통과: request → 대화 → 완료 → archive → book',
   ]},
   { date: '2/19', items: [
     'F-007 아카이브 실제 데이터 연동 완료',
