@@ -283,7 +283,8 @@ export default function VisionPage() {
           <div className="bg-bark px-8 py-12 text-center">
             <blockquote className="font-serif text-[clamp(18px,2.8vw,26px)] font-light leading-[1.75] text-cream/90 italic">
               한국에서 효도로 시작합니다.<br />
-              #아리랑 으로 세계에 닿습니다.<br />
+              3.20 BTS 앨범 &apos;아리랑&apos; 출시에 맞춰<br />
+              #arirang 으로 세계에 닿습니다.<br />
               <br />
               수십만 개의 인터뷰에서<br />
               보편 서사를 추출합니다.<br />
