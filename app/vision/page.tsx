@@ -355,7 +355,7 @@ export default function VisionPage() {
             href="https://hahnryu.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-block text-[14px] text-stone font-light hover:text-bark transition-colors"
+            className="mt-3 inline-block text-[14px] text-stone font-semibold hover:text-bark transition-colors"
           >
             hahnryu.com
           </a>
