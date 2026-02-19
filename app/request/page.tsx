@@ -341,12 +341,6 @@ export default function RequestPage() {
             </div>
 
             <button
-              onClick={() => router.push(`/archive/${generatedId}`)}
-              className="w-full h-[52px] rounded-[6px] bg-bark text-[16px] font-medium text-warm-white transition-colors hover:bg-bark-light"
-            >
-              녹취 현황 확인하기
-            </button>
-            <button
               onClick={() => router.push('/')}
               className="w-full h-[40px] text-[14px] text-stone/70 hover:text-stone transition-colors"
             >
