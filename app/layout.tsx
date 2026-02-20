@@ -18,6 +18,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-H27CYR3LDH"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-H27CYR3LDH');
+          `}
+        </Script>
+      </head>
       <body>
         {children}
         {process.env.NEXT_PUBLIC_KAKAO_JS_KEY && (

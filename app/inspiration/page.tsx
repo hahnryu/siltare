@@ -79,7 +79,7 @@ function AudioPlayer() {
 
   return (
     <div className="mt-8 flex flex-col items-center gap-3">
-      <p className="text-[13px] text-cream/50">유석문 편집자 육성 (2026.02.15 녹취)</p>
+      <p className="text-[13px] text-cream/50">류석무 편집자 육성 (2026.02.15 녹취)</p>
       <div className="inline-flex items-center gap-3 rounded-full bg-cream/5 px-5 py-3">
         <audio ref={audioRef} src="/yoo_seokmoon.ogg" preload="metadata" />
         <button
@@ -327,7 +327,7 @@ export default function InspirationPage() {
                 &ldquo;문화는 한 시대의 꽃이 아니라 뿌리에요. 뿌리가 깊으면 꽃은 철 따라 계속 필 수 있어요. 하지만 꽃이 피어도 뿌리가 약하면 그건 한 철에 지나지 않아요. 바로 이런 지점이 우리가 &lsquo;뿌리깊은나무&rsquo;를 통해 담아 내고자 했던 본령이었어요.&rdquo;
               </p>
               <footer className="mt-4 text-[14px] text-cream/60">
-                — 유석문, 뿌리깊은나무 마지막 편집자
+                — 류석무, 뿌리깊은나무 마지막 편집자
               </footer>
             </blockquote>
             <AudioPlayer />
