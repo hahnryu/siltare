@@ -1,7 +1,7 @@
 # CLAUDE.md - Siltare (실타래)
 
 > Last updated: 2026-02-25
-> Version: 0.3.0 (Telegram-style UX + Audio preservation)
+> Version: 0.3.0 (Telegram voice UX + Audio architecture + Flow map)
 
 ## Glossary
 
@@ -169,6 +169,8 @@ Business logic. Everything that is not UI.
 ```
 siltare/
 ├── CLAUDE.md
+├── FLOW-MAP.md                      # Business flow map (user flows, revenue, login policy)
+├── supabase-audio-chunks-schema.sql # Audio chunks table DDL
 ├── middleware.ts                    # /dashboard auth protection (F-019)
 ├── app/
 │   ├── layout.tsx                   # Global layout + Kakao SDK script
@@ -203,6 +205,10 @@ siltare/
 │       ├── chat/route.ts            # GPT-4o SSE streaming
 │       ├── transcribe/route.ts      # Whisper speech-to-text
 │       ├── complete/route.ts        # Completion (summary + entity extraction)
+│       ├── upload-audio/route.ts    # Audio upload to Supabase Storage
+│       ├── save-audio-chunk/route.ts # audio_chunks table insert
+│       ├── audio/[chunkId]/route.ts # Audio streaming proxy
+│       ├── audio-chunks/[interviewId]/route.ts # List audio chunks
 │       └── auth/dashboard/route.ts  # Dashboard auth API (cookie-based)
 │
 ├── components/
@@ -257,6 +263,19 @@ interviews table (1 row = 1 conversation)
 ├── transcript, summary, entities (jsonb)
 └── created_at, updated_at
 ```
+
+### Audio Storage (NEW, 2/25)
+Supabase Storage bucket: 'audio-chunks' (private)
+Path: {interview_id}/{chunk_id}.{ext}
+Metadata: audio_chunks table (1 row = 1 recording, 1:1:1 mapping)
+Access: lib/store.ts createAudioChunk, getAudioChunks, updateAudioChunk
+
+### New API Endpoints (2/25)
+- POST /api/upload-audio: Supabase Storage upload
+- POST /api/save-audio-chunk: audio_chunks table insert
+- GET /api/audio/[chunkId]: Audio streaming proxy
+- GET /api/audio-chunks/[interviewId]: List audio chunks
+- POST /api/transcribe: Updated to verbose_json with segments
 
 ### Future Expansion
 ```
@@ -345,50 +364,46 @@ Interview (1 record = one life-story project)
 
 ## Feature Layer Roadmap
 
-### Layer 0: Done (Hashed submission, 2/17-2/20)
-- Landing (7 sections), inspiration, vision pages
-- AI conversation with SSE streaming
-- Voice input (MediaRecorder + Whisper)
-- Archive with real data from Supabase (F-007)
-- Supabase migration from JSON files (F-009)
-- Dashboard with mockup data + admin auth (F-019)
-- Dev log page at /dashboard/log (F-022, public)
-- Chat message timestamps (F-015)
-- KakaoTalk share SDK integration + domain registration (F-005)
-- Nav + Footer common components
-- 14 feedback items completed out of 29
+### Layer 0: Done (2/17-2/25)
+- Everything from previous Layer 0
+- F-016: Telegram-style voice UX (audio bubbles, chunks, send button)
+- F-017: AI response timing (multi-chunk accumulation)
+- F-026: Audio preservation (Supabase Storage + audio_chunks table)
+- Archive redesign (v0 mockup restoration)
+- Message IDs (blob-level editing prep)
+- ChatMessage date+time display
+- "오늘은 여기까지" button visual enhancement
+- /request developer test button
 
-### Layer 1: Parents' Day MVP (May 8 target)
-- F-026: Audio preservation (Supabase Storage)
-- F-027: Kakao Login (NextAuth)
-- F-028: Revisit / multi-session
-- F-016/017: Telegram-style voice UX + AI response timing
+### Phase 1: Parents' Day MVP (May 8)
+- F-028: Continue conversation (session_end state, AI context pickup)
+- F-029: /request voice input (GPT-4o parsing, fallback to form)
+- F-030: Greeting recording (requester voice message to interviewee)
+- F-031/032: Signup nudge (post-conversation for both parties)
+- F-033: Completion screen redesign (Kakao connect + link save)
+- F-034: Payment - record preservation (Toss, 9,900 KRW)
+- F-035: Personality analysis report (GPT-4o, 19,000 KRW)
+- F-036: Email result delivery
+- F-010: Social login (Kakao + Google/Apple via NextAuth)
+- F-027: Kakao notification templates (progress alerts, reminders)
 - F-005: KakaoTalk share end-to-end testing
-- Payment (Toss Payments)
-- Email result delivery
 
-### Layer 2: Editing + Sharing (Jun-Jul)
+### Phase 2: Relationship Analysis (Jun-Jul)
+- F-037/023: Group chat (requester in chatroom, Message.role: requester)
+- F-038: Knock/admission system (waiting room, permission, kick)
+- F-039: Relationship dynamics report (2+ person comparison, 29,000 KRW)
+- F-040: Messages table separation (jsonb → table, Supabase Realtime)
+- F-041: Kakao reminder notifications (automated, max 3 for interviewee)
 - F-024: Collaborative transcript editing
-- AI-highlighted typo candidates (dialect/proper noun detection)
-- Family sharing link (password protected)
-- F-006: User dashboard (/my)
+- F-025: Self mode completion
+- F-006: Interview list (header dropdown or /my, if needed)
 
-### Layer 3: Users + Permissions (Aug-Sep)
-- F-027: Kakao Login (if not done in Layer 1)
-- Role-based dashboards (requester / interviewee / admin)
-- F-023: Requester real-time participation
-- Completion percentage ("Father's story, 68% complete")
-
-### Layer 4: Theme + i18n (TBD)
-- Dark mode (CSS variables already in :root)
-- English, Japanese UI
-- Multi-language interviews (prompt language switching)
-
-### Layer 5: Publication + Corpus (TBD)
-- Public sharing option
-- Anonymized publication (auto-replace names/places)
-- Ontology corpus contribution (public interest, separate consent)
-- Collective memory research dataset
+### Phase 3: Subscription + Scale (Aug-Sep)
+- F-042: Family subscription (monthly 9,900 KRW, Toss recurring)
+- F-043: Family narrative map (3+ person analysis, visualization)
+- F-044: Multilingual UI (English, Japanese)
+- F-045: Google/Apple login (overseas users)
+- B2B: Care facilities, clan associations, religious organizations
 
 ## Dashboard Architecture
 
@@ -398,10 +413,9 @@ Interview (1 record = one life-story project)
 - /dashboard/login: Login form
 - /dashboard/log: Dev log with 29 feedback items (PUBLIC, no auth required)
 
-### /my (User-facing, FUTURE, requires F-027)
-- Requester's view: interview list, status, archive links
-- Requires Kakao Login to identify "my" interviews
-- NOT same as /dashboard. Completely separate page.
+### /my (HOLD)
+Deferred. /archive/{id} serves as the interview home for now.
+When users accumulate 3+ interviews, add interview list as header dropdown or /my page.
 
 ## Coding Rules
 
@@ -452,8 +466,8 @@ Things Claude Code MUST NEVER do in this project:
 These define the product's essence. Never violate during feature additions or refactoring.
 
 1. Elderly users are the primary audience. Large text, large buttons, no complex UI.
-2. No signup required. Interviewee just opens a link.
-3. Requester only provides email to receive results.
+2. First experience has zero friction. Interviewee opens a link without signup. Signup is prompted after first conversation (for continuity, notifications, payment).
+3. Requester provides email at minimum. Kakao connection encouraged after link creation (for notifications). Required for payment and chat participation.
 4. AI conversation MUST stream via SSE. Character-by-character creates conversation feel.
 5. AI turn is max 3 sentences. Usually 1-2.
 6. First question must not be generic. Start from what the child asked about.
@@ -461,6 +475,8 @@ These define the product's essence. Never violate during feature additions or re
 8. Never use the word "인터뷰" (interview). Use "이야기" (story) or "대화" (conversation).
 9. Do not reveal AI identity during conversation. Mention only on info screens.
 10. Product essence: A tool that asks the questions you never could, while your parents are still alive.
+11. This is a ritualistic life-story chatroom, not a one-time tool. Users return to continue their story across multiple sessions.
+12. Revenue comes from analysis, not conversation. First conversation is always free. Paid features: audio preservation, personality analysis, relationship dynamics, autobiography book.
 
 ## Known Bugs (2026-02-20)
 
@@ -626,13 +642,17 @@ Note: SUPABASE_SERVICE_ROLE_KEY bypasses RLS. Server-side only. NEVER expose to 
 
 ## Feedback Tracking
 
-29 total items tracked at /dashboard/log.
+45 total items tracked at /dashboard/log.
 Data in lib/feedback-data.ts.
-Detailed specs in external doc (siltare-feedback-status.md).
+Business design in FLOW-MAP.md.
 
-Completed (14): F-001~F-004, F-002b, F-007, F-009, F-011~F-013, F-015, F-018, F-019, F-022
+Completed (17): F-001~F-004, F-002b, F-007, F-009, F-011~F-013, F-015~F-018, F-019, F-022, F-026
 In progress (3): F-005, F-014, F-025
-Remaining (12): F-006, F-008, F-010, F-016~F-017, F-020~F-021, F-023~F-024, F-026~F-028
+Phase 1 (10): F-010, F-027~F-036
+Phase 2 (7): F-006, F-023~F-024, F-037~F-041
+Phase 3 (4): F-042~F-045
+Hold (1): F-006
+Other (3): F-008, F-020, F-021
 
 ## Context
 
