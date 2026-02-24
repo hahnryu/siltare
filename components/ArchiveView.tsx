@@ -427,6 +427,22 @@ export function ArchiveView({ interview }: { interview: Interview }) {
 
       {/* ── Bottom CTAs ── */}
       <section className="fade-up mx-auto mt-12 max-w-2xl px-5 pb-16">
+        {/* Payment CTA */}
+        <div className="mb-6 rounded-[12px] border border-mist bg-warm-white p-6">
+          <h3 className="mb-2 font-serif text-[18px] font-bold text-bark">
+            소중한 이야기를 안전하게 보관하세요
+          </h3>
+          <p className="mb-4 text-[14px] leading-relaxed text-secondary">
+            음성 원본 영구 보관 + AI 편집 요약 + 챕터 자동 생성
+          </p>
+          <button
+            onClick={() => router.push(`/payment/${id}`)}
+            className="h-[48px] w-full rounded-[6px] bg-amber text-[16px] font-bold text-white transition-colors hover:bg-amber-dark"
+          >
+            기록 보관하기 9,900원
+          </button>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2">
           {/* Book CTA */}
           <div className="flex flex-col rounded-[12px] border border-mist bg-warm-white p-6">

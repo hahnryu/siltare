@@ -642,14 +642,14 @@ Note: SUPABASE_SERVICE_ROLE_KEY bypasses RLS. Server-side only. NEVER expose to 
 
 ## Feedback Tracking
 
-45 total items tracked at /dashboard/log.
+49 total items tracked at /dashboard/log.
 Data in lib/feedback-data.ts.
 Business design in FLOW-MAP.md.
 
 Completed (17): F-001~F-004, F-002b, F-007, F-009, F-011~F-013, F-015~F-018, F-019, F-022, F-026
 In progress (3): F-005, F-014, F-025
-Phase 1 (10): F-010, F-027~F-036
-Phase 2 (7): F-006, F-023~F-024, F-037~F-041
+Phase 1 (11): F-010, F-027~F-036, F-046
+Phase 2 (10): F-006, F-023~F-024, F-037~F-041, F-047~F-049
 Phase 3 (4): F-042~F-045
 Hold (1): F-006
 Other (3): F-008, F-020, F-021

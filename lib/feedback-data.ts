@@ -59,7 +59,7 @@ export const FEEDBACK_ITEMS: FeedbackItem[] = [
   { id: "F-031", title: "가입 유도 (인터뷰이)", page: "/interview/{id}", status: "todo", priority: "P1", description: "대화 완료 후 카카오 연결 강하게 유도. 이어하기/알림에 필요. 건너뛰기는 작고 연하게." },
   { id: "F-032", title: "가입 유도 (요청자)", page: "/request", status: "todo", priority: "P1", description: "링크 생성 후 카카오 연결 유도. 결과 도착 카톡 알림에 필요." },
   { id: "F-033", title: "완료 화면 재설계", page: "/interview/{id}", status: "todo", priority: "P1", description: "오늘은 여기까지 후: 카카오 연결 + 링크 저장(나에게 보내기) + 기록 보러가기. session_end 상태." },
-  { id: "F-034", title: "결제 (기록 보관)", page: "/archive/{id}", status: "todo", priority: "P1", description: "Toss Payments. 음성 영구 보관 + AI 편집 요약 + 챕터 생성. 9,900원." },
+  { id: "F-034", title: "결제 (기록 보관)", page: "/archive/{id}", status: "wip", priority: "P1", description: "Toss Payments 연동 완료. 수동 작업 필요: 1) developers.tosspayments.com 가입 + 테스트 상점 생성 2) .env.local에 NEXT_PUBLIC_TOSS_CLIENT_KEY=test_ck_xxx, TOSS_SECRET_KEY=test_sk_xxx 추가 3) Vercel 환경변수 추가 4) /archive/{id} 하단 버튼 클릭 → /payment/{id} → 테스트 카드 결제 → /payment/success 확인. 상세: TOSS_PAYMENT_SETUP.md 참조. 코드: app/payment/[interviewId]/page.tsx, app/api/payment/confirm/route.ts, payment/success/fail 페이지, ArchiveView.tsx CTA 추가됨. Interview.payment 타입 추가됨." },
   { id: "F-035", title: "성격 분석 리포트", page: "/archive/{id}", status: "todo", priority: "P1", description: "1인 성격 프로파일. 자주 쓰는 단어, 감정 패턴, 가치관 맵, 인생 타임라인. GPT-4o 분석. 19,000원." },
   { id: "F-036", title: "이메일 결과 전송", page: "백엔드", status: "todo", priority: "P1", description: "인터뷰 완료 시 요청자 이메일로 archive 링크 전송." },
 
@@ -75,6 +75,12 @@ export const FEEDBACK_ITEMS: FeedbackItem[] = [
   { id: "F-043", title: "가족 서사 지도", page: "/archive", status: "todo", priority: "P3", description: "3인 이상 가족 분석. 누가 어떤 기억의 중심인지, 세대 간 가치관 변화 시각화." },
   { id: "F-044", title: "다국어 UI", page: "전체", status: "todo", priority: "P3", description: "영어/일본어 UI. 대화는 한국어 유지. 해외 교포 자녀가 한국 부모님께 보내는 시나리오." },
   { id: "F-045", title: "Google/Apple 로그인", page: "전체", status: "todo", priority: "P3", description: "해외 사용자 대응. 카카오 없는 교포/외국인 가족. F-010 확장." },
+
+  // === 추가 기능 (플로우 맵 반영) ===
+  { id: "F-046", title: "오리엔테이션 (Phase 0)", page: "/interview/{id}", status: "todo", priority: "P1", description: "AI가 구술사 의미 설명 + 기본정보 수집 (생년월일, 출생지). 인사 녹음 재생 후, 본 대화 전에 진행. 당신의 기록이 얼마나 중요한지 알리기." },
+  { id: "F-047", title: "archive 편집 모드", page: "/archive/{id}", status: "todo", priority: "P2", description: "읽기 전용 → 편집 가능. 챕터 재배치, 제목 수정, 구간 삭제/추가. 책 편집 인터페이스. F-024의 실체." },
+  { id: "F-048", title: "가족 초대 (엄마도)", page: "/archive/{id}", status: "todo", priority: "P2", description: "archive에서 '엄마도 초대하기' → 새 /request 생성. 기존 가족 컨텍스트(이름, 관계) 자동 물려받기." },
+  { id: "F-049", title: "이야기 완성도 판단", page: "/interview/{id}, /archive/{id}", status: "todo", priority: "P2", description: "AI가 세션 수, 총 시간, 주제 커버리지를 보고 '책으로 만들 수 있을 만큼 이야기가 모였습니다' 제안. 10시간 목표." },
 ];
 
 export interface ChangelogEntry {
@@ -83,6 +89,20 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2/26', items: [
+    'F-034 토스페이먼츠 결제 연동 (테스트 모드)',
+    'app/payment/[interviewId]/page.tsx: 결제 위젯 페이지 생성',
+    'app/api/payment/confirm/route.ts: 결제 승인 API',
+    'app/payment/success/page.tsx, fail/page.tsx: 결과 페이지',
+    'ArchiveView.tsx: "기록 보관하기 9,900원" CTA 추가',
+    'Interview.payment 타입 추가 (paymentKey, orderId, amount, method, status, approvedAt)',
+    '@tosspayments/tosspayments-sdk 패키지 설치',
+    'TOSS_PAYMENT_SETUP.md: 환경변수 설정 가이드',
+    '수동 작업 필요: developers.tosspayments.com 가입, API 키 발급, 환경변수 추가, 테스트',
+    'FLOW-MAP.md 업데이트: 한 사이클 전체 그림(3-D), 아카이브 작업 공간 재정의(읽기/듣기/편집/확장/분석/출판/보관), AI 오리엔테이션 Phase 0 추가(구술사 의미 설명 + 기본정보 수집)',
+    'F-046~F-049 추가: 오리엔테이션, archive 편집 모드, 가족 초대, 이야기 완성도 판단',
+    'Feedback 총 49개 항목으로 확장',
+  ]},
   { date: '2/25', items: [
     'F-016 텔레그램 스타일 음성 UX: 녹음 → 오디오 버블(재생/변환/삭제) → 전송',
     'F-017 AI 응답 타이밍: 다중 조각(오디오+텍스트) 누적 후 전송 버튼으로 트리거',

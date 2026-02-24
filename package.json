@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.97.0",
+    "@tosspayments/tosspayments-sdk": "^2.5.0",
     "lucide-react": "^0.574.0",
     "nanoid": "^5.1.6",
     "next": "14.2.35",

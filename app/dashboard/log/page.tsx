@@ -49,7 +49,9 @@ const STATUS_CONFIG: Record<
 
 const PRIORITY_CONFIG: Record<FeedbackPriority, { label: string; class: string }> = {
   P0:       { label: 'P0',      class: 'bg-red-100 text-red-700' },
-  short:    { label: '단기',    class: 'bg-amber/20 text-amber-700' },
+  P1:       { label: 'P1',      class: 'bg-orange-100 text-orange-700' },
+  P2:       { label: 'P2',      class: 'bg-amber-100 text-amber-700' },
+  P3:       { label: 'P3',      class: 'bg-yellow-100 text-yellow-700' },
   roadmap:  { label: '로드맵',  class: 'bg-mist text-stone' },
 };
 
@@ -78,9 +80,11 @@ export default function DevLogPage() {
 
   // Group by priority for display
   const groups: { key: FeedbackPriority; label: string }[] = [
-    { key: 'P0',      label: 'P0 — 즉시 수정' },
-    { key: 'short',   label: '단기 — 이번 주' },
-    { key: 'roadmap', label: '로드맵' },
+    { key: 'P0',      label: 'P0 — 이번 주 (시연)' },
+    { key: 'P1',      label: 'P1 — Phase 1 어버이날 MVP (5월 8일)' },
+    { key: 'P2',      label: 'P2 — Phase 2 관계 분석 (6~7월)' },
+    { key: 'P3',      label: 'P3 — Phase 3 구독 + 스케일 (8~9월)' },
+    { key: 'roadmap', label: '로드맵 — 미정' },
   ];
 
   return (
@@ -106,6 +110,18 @@ export default function DevLogPage() {
           <p className="mt-2 text-[15px] text-stone">
             총 {total}개 항목 · {doneCount}개 완료 · {wipCount}개 진행중 · {todoCount}개 예정
           </p>
+          <div className="mt-4 rounded-lg border border-amber/30 bg-amber/5 p-4">
+            <p className="text-[14px] text-bark">
+              📋 <a
+                href="https://github.com/hahnryu/siltare/blob/main/FLOW-MAP.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium underline hover:text-amber"
+              >
+                플로우 맵 (FLOW-MAP.md)
+              </a> - 유저 플로우, 상태 전이, 수익 모델, 로그인 정책
+            </p>
+          </div>
 
           {/* Progress bar */}
           <div className="mt-5">

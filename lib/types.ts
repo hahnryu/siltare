@@ -23,6 +23,15 @@ export interface Interview {
   transcript?: string;
   summary?: string;
   entities?: EntityData;
+
+  payment?: {
+    paymentKey: string;
+    orderId: string;
+    amount: number;
+    method: string;
+    status: string;
+    approvedAt: string;
+  };
 }
 
 export interface Message {
