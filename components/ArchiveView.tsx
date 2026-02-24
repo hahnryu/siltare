@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Interview } from '@/lib/types';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -40,6 +39,21 @@ function fmtTime(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function fmtDuration(sec: number): string {
+  if (!isFinite(sec) || sec < 0) return '0초';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  if (m > 0) return `${m}분 ${s}초`;
+  return `${s}초`;
+}
+
+function calculateDurationSeconds(messages: { timestamp: string }[]): number {
+  if (messages.length < 2) return 0;
+  const first = new Date(messages[0].timestamp).getTime();
+  const last = new Date(messages[messages.length - 1].timestamp).getTime();
+  return Math.round((last - first) / 1000);
 }
 
 // ── Inline audio player (per user message) ───────────────────────────────────
@@ -123,15 +137,37 @@ function MsgAudioPlayer({ src }: { src: string }) {
 export function ArchiveView({ interview }: { interview: Interview }) {
   const router = useRouter();
   const [linkCopied, setLinkCopied] = useState(false);
+  const [audioChunksMap, setAudioChunksMap] = useState<Record<number, string>>({});
+  const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
   const hasKakao = !!process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
   useFadeIn();
 
-  const { id, interviewee, requester, mode, messages, summary, entities, transcript, createdAt } =
-    interview;
+  // Fetch audio chunks for this interview
+  useEffect(() => {
+    fetch(`/api/audio-chunks/${interview.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.chunks) {
+          const map: Record<number, string> = {};
+          data.chunks.forEach((chunk: { messageIndex?: number; id: string }) => {
+            if (chunk.messageIndex !== undefined) {
+              map[chunk.messageIndex] = chunk.id;
+            }
+          });
+          setAudioChunksMap(map);
+        }
+      })
+      .catch(() => {});
+  }, [interview.id]);
 
-  const charCount = transcript?.replace(/\s/g, '').length
-    ?? messages.reduce((sum, m) => sum + m.content.length, 0);
+  const { id, interviewee, requester, mode, messages, summary, entities, createdAt } = interview;
 
+  // Stats
+  const userMsgCount = messages.filter((m) => m.role === 'user').length;
+  const charCount = messages
+    .filter((m) => m.role === 'user')
+    .reduce((sum, m) => sum + m.content.replace(/\s/g, '').length, 0);
+  const durationSeconds = calculateDurationSeconds(messages);
   const entityCount = entities
     ? (entities.persons?.length ?? 0) +
       (entities.places?.length ?? 0) +
@@ -139,14 +175,24 @@ export function ArchiveView({ interview }: { interview: Interview }) {
       (entities.events?.length ?? 0)
     : 0;
 
-  const userMsgCount = messages.filter((m) => m.role === 'user').length;
+  // Subject line (출생 정보는 현재 데이터에 없으므로 기본 부제)
+  const subjectLine =
+    mode === 'invite' && requester
+      ? `${requester.name}님이 요청한 이야기`
+      : `${interviewee.name}님이 직접 기록한 이야기`;
+
+  // Summary paragraphs
+  const summaryParagraphs = summary ? summary.split('\n\n').filter((p) => p.trim()) : [];
 
   function handleShare() {
     if (typeof window === 'undefined') return;
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2500);
-    }).catch(() => {});
+    navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => {
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2500);
+      })
+      .catch(() => {});
   }
 
   function handleKakaoShare() {
@@ -168,46 +214,74 @@ export function ArchiveView({ interview }: { interview: Interview }) {
     });
   }
 
-  const subtitle =
-    mode === 'invite' && requester
-      ? `${requester.name}님이 요청한 이야기`
-      : '본인이 직접 기록한 이야기';
-
   return (
     <main className="flex-1 py-8 md:py-14">
-
       {/* Back link */}
       <div className="mx-auto max-w-2xl px-5">
         <button
           onClick={() => router.back()}
           className="flex items-center gap-1.5 text-[14px] text-stone transition-colors hover:text-bark"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="m15 18-6-6 6-6" />
           </svg>
           돌아가기
         </button>
       </div>
 
-      {/* ── Hero ── */}
+      {/* ── Title Area ── */}
       <section className="fade-up mx-auto mt-8 max-w-2xl px-5 text-center">
         <p className="text-[13px] tracking-wide text-stone">{formatKoreanDate(createdAt)}</p>
         <h1 className="mt-4 font-serif text-[32px] font-bold leading-tight text-bark md:text-[42px]">
           {interviewee.name}의 이야기
         </h1>
-        <p className="mt-2 text-[17px] text-leaf">{subtitle}</p>
+        <p className="mt-2 text-[17px] text-secondary">{subjectLine}</p>
 
         {/* Stats row */}
         <div className="mt-8 flex items-center justify-center gap-6 text-[13px] text-stone md:gap-8">
+          {durationSeconds > 0 && (
+            <>
+              <span className="flex items-center gap-1.5">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="shrink-0 text-amber"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                {fmtDuration(durationSeconds)}
+              </span>
+              <span className="h-4 w-px bg-mist" aria-hidden="true" />
+            </>
+          )}
           <span className="flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            {userMsgCount}회 대화
-          </span>
-          <span className="h-4 w-px bg-mist" aria-hidden="true" />
-          <span className="flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0 text-amber"
+            >
               <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
               <polyline points="14 2 14 8 20 8" />
             </svg>
@@ -217,10 +291,25 @@ export function ArchiveView({ interview }: { interview: Interview }) {
             <>
               <span className="h-4 w-px bg-mist" aria-hidden="true" />
               <span className="flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber">
-                  <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="shrink-0 text-amber"
+                >
+                  <line x1="8" y1="6" x2="21" y2="6" />
+                  <line x1="8" y1="12" x2="21" y2="12" />
+                  <line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" />
+                  <line x1="3" y1="12" x2="3.01" y2="12" />
+                  <line x1="3" y1="18" x2="3.01" y2="18" />
                 </svg>
-                {entityCount}개 인물·장소
+                {entityCount}개 주제
               </span>
             </>
           )}
@@ -228,126 +317,113 @@ export function ArchiveView({ interview }: { interview: Interview }) {
       </section>
 
       {/* ── AI Summary ── */}
-      <section className="fade-up mx-auto mt-10 max-w-2xl px-5">
-        <div className="mb-4 flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber">
-            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z" />
-          </svg>
-          <h2 className="font-serif text-[20px] font-bold text-bark">AI 요약</h2>
-        </div>
-        <div className="rounded-[12px] border border-mist bg-warm-white p-6 md:p-8">
-          {summary ? (
-            <p className="whitespace-pre-line text-[15px] leading-[1.9] text-bark">{summary}</p>
-          ) : (
-            <p className="text-[15px] text-stone">요약을 생성하는 중입니다...</p>
-          )}
-        </div>
-      </section>
-
-      {/* ── Transcript ── */}
-      <section className="fade-up mx-auto mt-10 max-w-2xl px-5">
-        <div className="mb-4 flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-          </svg>
-          <h2 className="font-serif text-[20px] font-bold text-bark">전체 대화</h2>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {messages.map((msg, i) => {
-            const isUser = msg.role === 'user';
-            return (
-              <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[85%] rounded-[12px] px-4 py-3 ${
-                    isUser
-                      ? 'rounded-tr-[4px] border border-mist bg-warm-white'
-                      : 'rounded-tl-[4px] bg-mist-light'
-                  }`}
-                >
-                  {!isUser && (
-                    <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-amber">
-                      실타래
-                    </p>
-                  )}
-                  <p className="text-[15px] leading-[1.8] text-bark">{msg.content}</p>
-                  {msg.timestamp && (
-                    <p className="mt-1.5 text-[11px] text-stone/60">
-                      {new Date(msg.timestamp).toLocaleTimeString('ko-KR', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  )}
-                  {isUser && msg.audioUrl && <MsgAudioPlayer src={msg.audioUrl} />}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── Entities ── */}
-      {entities && entityCount > 0 && (
+      {summaryParagraphs.length > 0 && (
         <section className="fade-up mx-auto mt-10 max-w-2xl px-5">
           <div className="mb-4 flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber">
-              <circle cx="12" cy="8" r="4" /><path d="M6 20v-2a6 6 0 0 1 12 0v2" />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0 text-amber"
+            >
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z" />
             </svg>
-            <h2 className="font-serif text-[20px] font-bold text-bark">이야기 속 인물과 장소</h2>
+            <h2 className="font-serif text-[20px] font-bold text-bark">AI 요약</h2>
           </div>
-
-          <div className="flex flex-col gap-6">
-            {entities.persons && entities.persons.length > 0 && (
-              <div>
-                <p className="mb-2 text-[12px] font-medium uppercase tracking-widest text-stone">인물</p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {entities.persons.map((p, i) => (
-                    <div key={i} className="rounded-[10px] border border-mist bg-warm-white px-4 py-3">
-                      <p className="font-serif text-[15px] font-bold text-bark">{p.name}</p>
-                      <p className="text-[12px] text-amber">{p.relation}</p>
-                      <p className="mt-1 text-[13px] leading-[1.7] text-stone">{p.context}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {entities.places && entities.places.length > 0 && (
-              <div>
-                <p className="mb-2 text-[12px] font-medium uppercase tracking-widest text-stone">장소</p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {entities.places.map((p, i) => (
-                    <div key={i} className="rounded-[10px] border border-mist bg-warm-white px-4 py-3">
-                      <p className="font-serif text-[15px] font-bold text-bark">{p.name}</p>
-                      {p.time && <p className="text-[12px] text-amber">{p.time}</p>}
-                      <p className="mt-1 text-[13px] leading-[1.7] text-stone">{p.context}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {entities.events && entities.events.length > 0 && (
-              <div>
-                <p className="mb-2 text-[12px] font-medium uppercase tracking-widest text-stone">사건·기억</p>
-                <div className="flex flex-col gap-2">
-                  {entities.events.map((e, i) => (
-                    <div key={i} className="rounded-[10px] border border-mist bg-warm-white px-4 py-3">
-                      <p className="font-serif text-[15px] font-bold text-bark">{e.name}</p>
-                      {(e.time || e.place) && (
-                        <p className="text-[12px] text-amber">
-                          {[e.time, e.place].filter(Boolean).join(' · ')}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="rounded-[12px] border border-mist bg-warm-white p-6 md:p-8">
+            <div className="flex flex-col gap-4">
+              {summaryParagraphs.map((para, i) => (
+                <p key={i} className="text-[15px] leading-[1.9] text-bark">
+                  {para}
+                </p>
+              ))}
+            </div>
           </div>
         </section>
       )}
+
+      {/* ── Collapsible Transcript ── */}
+      <section className="fade-up mx-auto mt-10 max-w-2xl px-5">
+        <button
+          onClick={() => setIsTranscriptExpanded(!isTranscriptExpanded)}
+          className="mb-4 flex w-full items-center justify-between rounded-[12px] border border-mist bg-warm-white px-6 py-4 text-left transition-colors hover:bg-mist-light"
+        >
+          <div className="flex items-center gap-2">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0 text-amber"
+            >
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+            </svg>
+            <h2 className="font-serif text-[20px] font-bold text-bark">전체 대화 보기</h2>
+          </div>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`shrink-0 text-stone transition-transform ${
+              isTranscriptExpanded ? 'rotate-180' : ''
+            }`}
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+
+        {isTranscriptExpanded && (
+          <div className="flex flex-col gap-4">
+            {messages.map((msg, i) => {
+              const isUser = msg.role === 'user';
+              const audioChunkId = isUser ? audioChunksMap[i] : undefined;
+              const audioSrc = audioChunkId ? `/api/audio/${audioChunkId}` : msg.audioUrl;
+              return (
+                <div key={msg.id || i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[85%] rounded-[12px] px-4 py-3 ${
+                      isUser
+                        ? 'rounded-tr-[4px] border border-mist bg-warm-white'
+                        : 'rounded-tl-[4px] bg-mist-light'
+                    }`}
+                  >
+                    {!isUser && (
+                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-amber">
+                        실타래
+                      </p>
+                    )}
+                    <p className="text-[15px] leading-[1.8] text-bark">{msg.content}</p>
+                    {msg.timestamp && (
+                      <p className="mt-1.5 text-[11px] text-stone/60">
+                        {new Date(msg.timestamp).toLocaleTimeString('ko-KR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    )}
+                    {isUser && audioSrc && <MsgAudioPlayer src={audioSrc} />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* ── Bottom CTAs ── */}
       <section className="fade-up mx-auto mt-12 max-w-2xl px-5 pb-16">
@@ -355,12 +431,22 @@ export function ArchiveView({ interview }: { interview: Interview }) {
           {/* Book CTA */}
           <div className="flex flex-col rounded-[12px] border border-mist bg-warm-white p-6">
             <div className="mb-3 flex items-center gap-2">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="shrink-0 text-amber"
+              >
                 <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
               </svg>
               <h3 className="font-serif text-[16px] font-bold text-bark">자서전 책으로 만들기</h3>
             </div>
-            <p className="flex-1 text-[14px] leading-relaxed text-leaf">
+            <p className="flex-1 text-[14px] leading-relaxed text-secondary">
               {interviewee.name}의 이야기를 아름다운 책 한 권으로
             </p>
             <p className="mt-3 text-[14px] font-semibold text-bark">₩79,000부터</p>
@@ -375,13 +461,26 @@ export function ArchiveView({ interview }: { interview: Interview }) {
           {/* Share CTA */}
           <div className="flex flex-col rounded-[12px] border border-mist bg-warm-white p-6">
             <div className="mb-3 flex items-center gap-2">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-amber">
-                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="shrink-0 text-amber"
+              >
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
               </svg>
               <h3 className="font-serif text-[16px] font-bold text-bark">가족에게 공유하기</h3>
             </div>
-            <p className="flex-1 text-[14px] leading-relaxed text-leaf">
+            <p className="flex-1 text-[14px] leading-relaxed text-secondary">
               형제, 자매에게 이 기록을 나누세요
             </p>
             <button
@@ -402,7 +501,6 @@ export function ArchiveView({ interview }: { interview: Interview }) {
           </div>
         </div>
       </section>
-
     </main>
   );
 }

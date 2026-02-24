@@ -340,6 +340,15 @@ export default function RequestPage() {
               </div>
             </div>
 
+            {generatedId && (
+              <button
+                onClick={() => router.push(`/i/${generatedId}`)}
+                className="w-full h-[44px] rounded-[6px] border border-dashed border-stone/30 text-[13px] text-stone/60 hover:border-amber hover:text-amber transition-colors"
+              >
+                테스트 (개발자용): 어르신 화면으로 이동
+              </button>
+            )}
+
             <button
               onClick={() => router.push('/')}
               className="w-full h-[40px] text-[14px] text-stone/70 hover:text-stone transition-colors"

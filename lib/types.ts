@@ -26,10 +26,12 @@ export interface Interview {
 }
 
 export interface Message {
+  id?: string;
   role: 'assistant' | 'user';
   content: string;
   timestamp: string;
   audioUrl?: string;
+  audioDuration?: number;
 }
 
 export interface EntityData {
@@ -37,4 +39,25 @@ export interface EntityData {
   places: { name: string; context: string; time?: string }[];
   times: { period: string; context: string }[];
   events: { name: string; time?: string; place?: string; persons?: string[] }[];
+}
+
+export interface AudioChunk {
+  id: string;
+  interviewId: string;
+  chunkIndex: number;
+  storagePath?: string;
+  mimeType: string;
+  sampleRate: number;
+  channels: number;
+  bitrate: number;
+  durationSec?: number;
+  fileSize?: number;
+  transcript?: string;
+  language?: string;
+  segments?: { start: number; end: number; text: string }[];
+  whisperModel: string;
+  messageIndex?: number;
+  speakerLabel: string;
+  isVerified: boolean;
+  createdAt: string;
 }

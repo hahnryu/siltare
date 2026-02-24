@@ -24,7 +24,7 @@
  */
 
 import { supabase } from './supabase';
-import { Interview } from './types';
+import { Interview, AudioChunk } from './types';
 
 export async function createInterview(interview: Interview): Promise<void> {
   const { error } = await supabase
@@ -86,6 +86,81 @@ function rowToInterview(row: any): Interview {
     transcript: row.transcript,
     summary: row.summary,
     entities: row.entities,
+    createdAt: row.created_at,
+  };
+}
+
+// ========== AudioChunk CRUD ==========
+
+export async function createAudioChunk(chunk: AudioChunk): Promise<void> {
+  const { error } = await supabase.from('audio_chunks').insert({
+    id: chunk.id,
+    interview_id: chunk.interviewId,
+    chunk_index: chunk.chunkIndex,
+    storage_path: chunk.storagePath,
+    mime_type: chunk.mimeType,
+    sample_rate: chunk.sampleRate,
+    channels: chunk.channels,
+    bitrate: chunk.bitrate,
+    duration_sec: chunk.durationSec,
+    file_size: chunk.fileSize,
+    transcript: chunk.transcript,
+    language: chunk.language,
+    segments: chunk.segments,
+    whisper_model: chunk.whisperModel,
+    message_index: chunk.messageIndex,
+    speaker_label: chunk.speakerLabel,
+    is_verified: chunk.isVerified,
+  });
+  if (error) throw new Error(`createAudioChunk failed: ${error.message}`);
+}
+
+export async function getAudioChunks(interviewId: string): Promise<AudioChunk[]> {
+  const { data, error } = await supabase
+    .from('audio_chunks')
+    .select('*')
+    .eq('interview_id', interviewId)
+    .order('chunk_index', { ascending: true });
+  if (error) throw new Error(`getAudioChunks failed: ${error.message}`);
+  return (data || []).map(rowToAudioChunk);
+}
+
+export async function updateAudioChunk(id: string, updates: Partial<AudioChunk>): Promise<void> {
+  const payload: Record<string, unknown> = {};
+  if (updates.storagePath !== undefined) payload.storage_path = updates.storagePath;
+  if (updates.transcript !== undefined) payload.transcript = updates.transcript;
+  if (updates.language !== undefined) payload.language = updates.language;
+  if (updates.segments !== undefined) payload.segments = updates.segments;
+  if (updates.isVerified !== undefined) payload.is_verified = updates.isVerified;
+  if (updates.messageIndex !== undefined) payload.message_index = updates.messageIndex;
+
+  const { error } = await supabase
+    .from('audio_chunks')
+    .update(payload)
+    .eq('id', id);
+  if (error) throw new Error(`updateAudioChunk failed: ${error.message}`);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToAudioChunk(row: any): AudioChunk {
+  return {
+    id: row.id,
+    interviewId: row.interview_id,
+    chunkIndex: row.chunk_index,
+    storagePath: row.storage_path,
+    mimeType: row.mime_type,
+    sampleRate: row.sample_rate,
+    channels: row.channels,
+    bitrate: row.bitrate,
+    durationSec: row.duration_sec,
+    fileSize: row.file_size,
+    transcript: row.transcript,
+    language: row.language,
+    segments: row.segments,
+    whisperModel: row.whisper_model,
+    messageIndex: row.message_index,
+    speakerLabel: row.speaker_label,
+    isVerified: row.is_verified,
     createdAt: row.created_at,
   };
 }

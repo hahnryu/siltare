@@ -1,7 +1,7 @@
 # CLAUDE.md - Siltare (실타래)
 
-> Last updated: 2026-02-20
-> Version: 0.2.0 (Supabase migration + Hashed Vibe Labs submission)
+> Last updated: 2026-02-25
+> Version: 0.3.0 (Telegram-style UX + Audio preservation)
 
 ## Glossary
 
@@ -82,6 +82,43 @@ Store functions (lib/store.ts):
 - getAllInterviews(): Promise<Interview[]>
 
 MUST access data ONLY through these functions. No direct Supabase queries elsewhere.
+
+### Audio Storage: Supabase Storage + audio_chunks table
+
+Audio files stored in Supabase Storage bucket 'audio-chunks' (private).
+Path: {interview_id}/{chunk_id}.{ext}
+
+Metadata in audio_chunks table (1 row = 1 recording):
+```sql
+CREATE TABLE audio_chunks (
+  id            text PRIMARY KEY,
+  interview_id  text,
+  chunk_index   integer,
+  storage_path  text,
+  mime_type     text,
+  sample_rate   integer DEFAULT 48000,
+  channels      integer DEFAULT 1,
+  bitrate       integer DEFAULT 32000,
+  duration_sec  real,
+  file_size     integer,
+  transcript    text,
+  language      text,
+  segments      jsonb,
+  whisper_model text DEFAULT 'whisper-1',
+  message_index integer,
+  speaker_label text DEFAULT 'interviewee',
+  is_verified   boolean DEFAULT false,
+  created_at    timestamptz DEFAULT now()
+);
+```
+
+1:1:1 mapping: audio file : Whisper transcription : DB row.
+Segments contain Whisper timestamp data for corpus annotation.
+
+Access through lib/store.ts:
+- createAudioChunk(chunk: AudioChunk): Promise<void>
+- getAudioChunks(interviewId: string): Promise<AudioChunk[]>
+- updateAudioChunk(id: string, updates: Partial<AudioChunk>): Promise<void>
 
 ## Design System
 
@@ -266,20 +303,15 @@ Interview (1 record = one life-story project)
 
 ## Voice Recording Architecture
 
-**Current (MVP): Per-turn recording, press-and-hold**
-- User presses and holds mic button to record
-- Release to stop + auto-send (Telegram/WeChat pattern)
-- One gesture completes the action: "Press, speak, release."
-- Per turn: 10s to 1min short audio
-- Uploads full blob to /api/transcribe
-- Audio is discarded after Whisper transcription (F-026 will fix this)
-- Implementation: onMouseDown/onTouchStart -> startRecording, onMouseUp/onTouchEnd -> stopRecording
-- Visual feedback during recording: red + pulse animation + "듣고 있습니다..." text
-
-**Future (F-026): Audio preservation**
-- Upload audio to external storage (S3/R2/Supabase Storage)
-- Save audioUrl in Message object
-- ArchiveView.tsx already has MsgAudioPlayer that activates when audioUrl exists
+**Current: Telegram-style UX with audio preservation (F-016, F-026)**
+- Press-and-hold mic button → audio bubble created
+- Multiple audio/text chunks can be accumulated before sending
+- →A button converts audio to text (Whisper verbose_json with segments)
+- "전송" button sends all chunks to AI
+- Audio uploaded to Supabase Storage (audio-chunks bucket)
+- Metadata saved to audio_chunks table with Whisper segments
+- ArchiveView displays audio player for recorded messages
+- Implementation: onRecordingComplete callback, PendingChunk state management
 
 **Future: Continuous recording or auto-send**
 - MUST switch to 10-15 second chunk uploads
@@ -479,9 +511,14 @@ Loads interview from Supabase -> generateSystemPrompt() -> GPT-4o streaming -> s
 ### POST /api/transcribe
 ```
 Input: FormData (audio: Blob)
-Output: { text: string }
+Output: {
+  text: string,
+  language: string,
+  duration: number,
+  segments: { start: number, end: number, text: string }[]
+}
 ```
-Whisper API speech-to-text transcription.
+Whisper API speech-to-text transcription with verbose_json format. Returns segments for timestamp mapping.
 
 ### POST /api/complete
 ```
@@ -489,6 +526,32 @@ Input: { interviewId: string }
 Output: { transcript: string, summary: string, entities: EntityData }
 ```
 Combines messages into transcript, GPT-4o generates summary + entity extraction.
+
+### POST /api/upload-audio
+```
+Input: FormData { audio: Blob, interviewId: string, chunkId: string, mimeType: string }
+Output: { storagePath: string }
+```
+Uploads audio to Supabase Storage (audio-chunks bucket). Returns storage path.
+
+### POST /api/save-audio-chunk
+```
+Input: AudioChunk (JSON)
+Output: { ok: true }
+```
+Saves audio chunk metadata to audio_chunks table. Called after upload.
+
+### GET /api/audio/[chunkId]
+```
+Output: audio stream (audio/webm or audio/mp4)
+```
+Streams audio file from Supabase Storage. Used by ArchiveView audio player.
+
+### GET /api/audio-chunks/[interviewId]
+```
+Output: { chunks: AudioChunk[] }
+```
+Returns all audio chunks for an interview. Used by ArchiveView to map audio to messages.
 
 ### POST /api/auth/dashboard
 ```

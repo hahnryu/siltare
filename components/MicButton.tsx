@@ -4,12 +4,11 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 const LABELS = {
   recording: '듣고 있습니다...',
-  processing: '생각하고 있습니다',
   hint: '꾹 누르고 말씀하세요',
 };
 
 interface MicButtonProps {
-  onTranscription: (text: string) => void;
+  onRecordingComplete: (blob: Blob, duration: number, mimeType: string) => void;
   disabled?: boolean;
 }
 
@@ -19,23 +18,13 @@ function formatTime(sec: number) {
   return `${m}:${s}`;
 }
 
-function ProcessingDots() {
-  return (
-    <span className="inline-flex items-center gap-1" aria-hidden="true">
-      <span className="animate-dot-1 inline-block h-[5px] w-[5px] rounded-full bg-amber" />
-      <span className="animate-dot-2 inline-block h-[5px] w-[5px] rounded-full bg-amber" />
-      <span className="animate-dot-3 inline-block h-[5px] w-[5px] rounded-full bg-amber" />
-    </span>
-  );
-}
-
-export function MicButton({ onTranscription, disabled }: MicButtonProps) {
+export function MicButton({ onRecordingComplete, disabled }: MicButtonProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
     if (isRecording) {
@@ -50,51 +39,62 @@ export function MicButton({ onTranscription, disabled }: MicButtonProps) {
   }, [isRecording]);
 
   const startRecording = useCallback(async () => {
-    if (disabled || isRecording || isProcessing) return;
+    if (disabled || isRecording) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 48000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+
+      // Determine best supported MIME type
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/mp4';
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType,
+        audioBitsPerSecond: 32000,
+      });
+
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
+      startTimeRef.current = Date.now();
+
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
+
       mediaRecorder.start();
       setIsRecording(true);
     } catch {
       // mic not available
     }
-  }, [disabled, isRecording, isProcessing]);
+  }, [disabled, isRecording]);
 
   const stopRecording = useCallback(() => {
     const mediaRecorder = mediaRecorderRef.current;
     if (!mediaRecorder || !isRecording) return;
 
-    mediaRecorder.onstop = async () => {
-      const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+    mediaRecorder.onstop = () => {
+      const mimeType = mediaRecorder.mimeType;
+      const blob = new Blob(chunksRef.current, { type: mimeType });
+      const duration = (Date.now() - startTimeRef.current) / 1000;
+
       mediaRecorder.stream.getTracks().forEach((t) => t.stop());
-      if (blob.size === 0) {
-        setIsProcessing(false);
-        return;
-      }
-      const formData = new FormData();
-      formData.append('audio', blob);
-      try {
-        const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.text) onTranscription(data.text);
-      } catch {
-        // transcribe failed
-      } finally {
-        setIsProcessing(false);
+
+      if (blob.size > 0) {
+        onRecordingComplete(blob, duration, mimeType);
       }
     };
 
     mediaRecorder.stop();
     setIsRecording(false);
-    setIsProcessing(true);
     setElapsed(0);
-  }, [isRecording, onTranscription]);
+  }, [isRecording, onRecordingComplete]);
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -123,12 +123,6 @@ export function MicButton({ onTranscription, disabled }: MicButtonProps) {
         {isRecording && (
           <p className="font-sans text-sm text-amber">{LABELS.recording}</p>
         )}
-        {isProcessing && (
-          <p className="flex items-center gap-2 font-sans text-sm text-stone">
-            <span>{LABELS.processing}</span>
-            <ProcessingDots />
-          </p>
-        )}
       </div>
 
       {/* Mic button */}
@@ -137,19 +131,15 @@ export function MicButton({ onTranscription, disabled }: MicButtonProps) {
         onMouseUp={stopRecording}
         onTouchStart={(e) => { e.preventDefault(); startRecording(); }}
         onTouchEnd={(e) => { e.preventDefault(); stopRecording(); }}
-        disabled={disabled || isProcessing}
+        disabled={disabled}
         className={`relative flex h-[72px] w-[72px] items-center justify-center rounded-full transition-all duration-300 select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber ${
           isRecording
             ? 'bg-amber animate-pulse-glow'
-            : isProcessing
-            ? 'bg-stone opacity-60 cursor-not-allowed'
             : 'bg-bark hover:bg-bark/90 active:scale-95 disabled:opacity-40'
         }`}
         aria-label={
           isRecording
-            ? '녹음 중지 - 손을 떼면 전송됩니다'
-            : isProcessing
-            ? '처리 중'
+            ? '녹음 중지 - 손을 떼면 버블로 추가됩니다'
             : '마이크 버튼 - 꾹 누르고 말씀하세요'
         }
       >

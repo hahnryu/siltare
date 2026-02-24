@@ -24,10 +24,12 @@ export const FEEDBACK_ITEMS: FeedbackItem[] = [
   { id: "F-015", title: "말풍선 타임스탬프", page: "/interview/{id}", status: "done", priority: "P0", completedAt: "2/19", description: "각 메시지에 시각 표시 (오후 3:24)" },
   { id: "F-018", title: "완료 화면 버튼", page: "/interview/{id}", status: "done", priority: "P0", completedAt: "2/18", description: "이야기 기록 보기 → /archive 연결" },
 
+  // P0 - 추가 완료
+  { id: "F-016", title: "텔레그램 스타일 음성 UX", page: "/interview/{id}", status: "done", priority: "P0", completedAt: "2/25", description: "녹음 → 오디오 버블(재생/변환/삭제) → 전송" },
+  { id: "F-017", title: "AI 응답 타이밍", page: "/interview/{id}", status: "done", priority: "P0", completedAt: "2/25", description: "다중 조각(오디오+텍스트) 누적 후 전송 버튼으로 트리거" },
+
   // P0 - 미완료
   { id: "F-014", title: "녹음 타이머 크기", page: "/interview/{id}", status: "wip", priority: "P0", description: "녹음 중 타이머 text-2xl로 확대" },
-  { id: "F-016", title: "텔레그램 스타일 음성 UX", page: "/interview/{id}", status: "todo", priority: "P0", description: "press-and-hold + 파형 플레이어" },
-  { id: "F-017", title: "AI 응답 타이밍", page: "/interview/{id}", status: "todo", priority: "P0", description: "다중 음성 입력 시 대기 로직" },
 
   // 단기 - 완료
   { id: "F-007", title: "아카이브 데이터 연동", page: "/archive/{id}", status: "done", priority: "short", completedAt: "2/19", description: "하드코딩 → 실제 인터뷰 데이터 렌더링" },
@@ -47,7 +49,7 @@ export const FEEDBACK_ITEMS: FeedbackItem[] = [
   { id: "F-023", title: "요청자 인터뷰 참여", page: "/interview/{id}", status: "todo", priority: "roadmap", description: "실시간 질문 추가" },
   { id: "F-024", title: "아카이브 공동 편집", page: "/archive/{id}/edit", status: "todo", priority: "roadmap", description: "전사본 공동 수정" },
   { id: "F-025", title: "셀프 모드", page: "/self", status: "wip", priority: "roadmap", description: "준비 중 페이지만 존재" },
-  { id: "F-026", title: "음성 원본 저장", page: "/interview/{id}", status: "todo", priority: "roadmap", description: "스토리지 업로드 + audioUrl 저장" },
+  { id: "F-026", title: "음성 원본 저장", page: "/interview/{id}", status: "done", priority: "roadmap", completedAt: "2/25", description: "Supabase Storage 업로드 + audio_chunks 테이블 + Whisper segments 매핑" },
   { id: "F-027", title: "카카오 로그인", page: "전체", status: "todo", priority: "roadmap", description: "NextAuth + Kakao Provider" },
   { id: "F-028", title: "재방문 기능", page: "/my", status: "todo", priority: "roadmap", description: "내 인터뷰 목록, 다회차 이어하기" },
 ];
@@ -58,6 +60,27 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '2/25', items: [
+    'F-016 텔레그램 스타일 음성 UX: 녹음 → 오디오 버블(재생/변환/삭제) → 전송',
+    'F-017 AI 응답 타이밍: 다중 조각(오디오+텍스트) 누적 후 전송 버튼으로 트리거',
+    'AudioBubble, TextChunkBubble 컴포넌트 신규',
+    'MicButton 콜백 변경: onTranscription → onRecordingComplete',
+    'Enter 키 동작 변경: 즉시 전송 → 조각 추가',
+    'MediaRecorder 설정: 48kHz mono opus/aac, 32kbps',
+    'pending 조각 영역: 전송 전 조각들 시각적 구분',
+    '텍스트 조각: 탭하여 인라인 편집',
+    '오디오 조각: 재생/일시정지, →A 텍스트 변환, 삭제',
+    '"오늘은 여기까지" 버튼 시각적 강화 (48px, 전체 너비, 보더)',
+    '채팅 타임스탬프에 날짜 추가 (2/25 오후 3:24 형식)',
+    'Message에 고유 ID 추가 (향후 blob 단위 편집 대비)',
+    '/request 결과 화면에 개발자용 테스트 버튼 추가',
+    'F-026 음성 원본 저장: Supabase Storage 업로드 + audio_chunks 테이블',
+    '/api/transcribe verbose_json 전환: segments 타임스탬프 매핑',
+    '/api/upload-audio, /api/save-audio-chunk, /api/audio/[chunkId] 신규',
+    '/api/audio-chunks/[interviewId] 신규',
+    'lib/store.ts AudioChunk CRUD 추가',
+    'ArchiveView 오디오 재생 연동',
+  ]},
   { date: '2/19', items: [
     'F-009 Supabase 전환 완료 (JSON → PostgreSQL)',
     'F-009 store.ts 플랫 컬럼 방식으로 전면 교체 + lib/supabase.ts 싱글톤 분리',

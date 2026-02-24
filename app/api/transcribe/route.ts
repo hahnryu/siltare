@@ -14,6 +14,8 @@ export async function POST(req: NextRequest) {
     whisperForm.append('file', audio, 'audio.webm');
     whisperForm.append('model', 'whisper-1');
     whisperForm.append('language', 'ko');
+    whisperForm.append('response_format', 'verbose_json');
+    whisperForm.append('timestamp_granularities[]', 'segment');
 
     const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -28,7 +30,16 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    return NextResponse.json({ text: data.text });
+    return NextResponse.json({
+      text: data.text,
+      language: data.language,
+      duration: data.duration,
+      segments: data.segments?.map((s: { start: number; end: number; text: string }) => ({
+        start: s.start,
+        end: s.end,
+        text: s.text,
+      })),
+    });
   } catch {
     return NextResponse.json({ error: '서버 오류' }, { status: 500 });
   }

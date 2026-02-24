@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     // Add user message to history
     if (message) {
       const userMsg: Message = {
+        id: crypto.randomUUID(),
         role: 'user',
         content: message,
         timestamp: new Date().toISOString(),
@@ -101,6 +102,7 @@ export async function POST(req: NextRequest) {
         // Save assistant message (best-effort, don't fail the stream)
         if (fullContent) {
           const assistantMsg: Message = {
+            id: crypto.randomUUID(),
             role: 'assistant',
             content: fullContent,
             timestamp: new Date().toISOString(),
