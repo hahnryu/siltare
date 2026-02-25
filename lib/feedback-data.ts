@@ -51,7 +51,7 @@ export const FEEDBACK_ITEMS: FeedbackItem[] = [
   { id: "F-025", title: "셀프 모드", page: "/self", status: "wip", priority: "P2", description: "준비 중 페이지만 존재" },
   { id: "F-026", title: "음성 원본 저장", page: "/interview/{id}", status: "done", priority: "P0", completedAt: "2/25", description: "Supabase Storage 업로드 + audio_chunks 테이블 + Whisper segments 매핑" },
   { id: "F-027", title: "카카오 알림톡", page: "전체", status: "todo", priority: "P1", description: "비즈니스 채널 + 알림 템플릿. 진척 알림, 리마인더, 결과 도착 알림." },
-  { id: "F-028", title: "대화 이어하기", page: "/i/{id}, /interview/{id}", status: "todo", priority: "P1", description: "재진입 시 이전 대화 로드 + 날짜 구분선 + AI 맥락 이어받기. session_end 상태 추가." },
+  { id: "F-028", title: "대화 이어하기", page: "/i/{id}, /interview/{id}", status: "done", priority: "P1", completedAt: "2/26", description: "재진입 시 이전 대화 로드 + 날짜 구분선 + AI 맥락 이어받기. session_end 상태. Archive 이어하기 배너. handleResume + PATCH /api/create-interview." },
 
   // === Phase 1: 어버이날 MVP ===
   { id: "F-029", title: "/request 음성 입력", page: "/request", status: "todo", priority: "P1", description: "4단계 폼 대신 음성 한마디로 파싱. GPT-4o가 관계/이름/연령/질문/연락처 추출. 기존 폼은 폴백." },
@@ -67,7 +67,7 @@ export const FEEDBACK_ITEMS: FeedbackItem[] = [
   { id: "F-037", title: "단톡방 구조", page: "/interview/{id}", status: "todo", priority: "P2", description: "아버지+아들+AI 같은 채팅방. Message.role에 requester 추가. 3번째 버블 색상. F-023 구현체." },
   { id: "F-038", title: "노크/입장 허가", page: "/interview/{id}", status: "todo", priority: "P2", description: "아들 접근 시 대기실. 아버지 허락으로 입장. 내보내기 가능. participants 상태 polling." },
   { id: "F-039", title: "관계 다이나믹 분석", page: "/archive/{id}", status: "todo", priority: "P2", description: "2인 이상 인터뷰 비교. 같은 사건 다른 기억, 감정 온도 차이, 반복 패턴. 29,000원." },
-  { id: "F-040", title: "messages 테이블 분리", page: "백엔드", status: "todo", priority: "P2", description: "jsonb 배열 → 별도 테이블. Supabase Realtime 구독. 실시간 채팅 기반. audio_chunks 매핑 개선." },
+  { id: "F-040", title: "messages 테이블 분리", page: "백엔드", status: "done", priority: "P2", completedAt: "2/26", description: "interviews.messages JSONB → messages 테이블. createMessage/getMessages/getMessageCount CRUD. 폴백 로직. MessageMeta (phase, topic, intensity). /api/messages 엔드포인트. Realtime 구독은 Phase 2." },
   { id: "F-041", title: "카카오 리마인더 알림", page: "백엔드", status: "todo", priority: "P2", description: "아버지: 이어하기 리마인더 (최대 3회). 아들: 진척 알림 (시작/완료/추가). 밤 9시 이후 금지." },
 
   // === Phase 3: 구독 + 스케일 ===
@@ -90,6 +90,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   { date: '2/26', items: [
+    'F-028 대화 이어하기 완료: session_end 상태, Archive 이어하기 배너, Interview 재진입 로직',
+    'DateDivider 컴포넌트 신규 (날짜 구분선)',
+    'Interview 페이지 status 분기: complete → archive 리다이렉트, session_end → 기존 대화 로드',
+    '/api/messages에서 이전 세션 메시지 로드, 마지막 세션 날짜 추출',
+    'handleResume 함수: status를 active로 변경 + AI 재시작',
+    'PATCH /api/create-interview 엔드포인트 추가',
+    'AI 이어하기 프롬프트 강화: "중요" 키워드 + 3단계 포맷 (인사 → 지난 대화 언급 → 다음 질문)',
+    'F-040 messages 테이블 분리 완료: interviews.messages JSONB → messages 테이블',
+    'createMessage/getMessages/getMessageCount CRUD 함수 추가',
+    'MessageMeta 인터페이스 (phase, topic, subtopic, qtype, intensity)',
+    '/api/messages GET 엔드포인트 신규, 폴백 로직 (backward compatibility)',
+    'updateInterview camelCase → snake_case 매핑 추가 (sessionCount → session_count 등)',
+    '/api/complete 에러 로깅 추가',
+    'supabase-session-upgrade.txt: session + analysis 컬럼 DDL',
+    'CLAUDE.md v0.4.0 업데이트 (Messages table + Session management + Resume conversation)',
     'F-034 토스페이먼츠 결제 연동 (테스트 모드)',
     'app/payment/[interviewId]/page.tsx: 결제 위젯 페이지 생성',
     'app/api/payment/confirm/route.ts: 결제 승인 API',
