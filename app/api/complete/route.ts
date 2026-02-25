@@ -107,7 +107,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ transcript, summary, entities });
-  } catch {
+  } catch (err) {
+    console.error('[ERROR] /api/complete:', err);
     return NextResponse.json({ error: '서버 오류' }, { status: 500 });
   }
 }

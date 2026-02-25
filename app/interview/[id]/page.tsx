@@ -6,7 +6,8 @@ import { ChatMessage } from '@/components/ChatMessage';
 import { MicButton } from '@/components/MicButton';
 import { AudioBubble } from '@/components/AudioBubble';
 import { TextChunkBubble } from '@/components/TextChunkBubble';
-import { Interview } from '@/lib/types';
+import { DateDivider } from '@/components/DateDivider';
+import { Interview, Message } from '@/lib/types';
 
 const LABELS = {
   logo: '실타래',
@@ -67,6 +68,8 @@ export default function InterviewPage() {
   const [completing, setCompleting] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [untranscribedWarning, setUntranscribedWarning] = useState('');
+  const [showResumeBanner, setShowResumeBanner] = useState(false);
+  const [lastSessionDate, setLastSessionDate] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Refs for stable access inside async callbacks (avoids stale closures)
@@ -165,21 +168,59 @@ export default function InterviewPage() {
     }
   }, [id, streaming]);
 
-  // Fetch interview metadata, then fire first AI message.
-  // Merged into one effect to guarantee interviewMetaRef is populated before sendMessage('').
+  // Fetch interview metadata, then fire first AI message or load previous session
   useEffect(() => {
     if (!id || initialized) return;
     setInitialized(true);
-    fetch(`/api/create-interview?id=${id}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: Interview | null) => {
-        if (data) interviewMetaRef.current = data;
-      })
-      .catch(() => {})
-      .finally(() => {
+
+    async function loadInterview() {
+      try {
+        // Load interview metadata
+        const interviewRes = await fetch(`/api/create-interview?id=${id}`);
+        if (!interviewRes.ok) return;
+        const interview: Interview = await interviewRes.json();
+        interviewMetaRef.current = interview;
+
+        // Status-based routing
+        if (interview.status === 'complete') {
+          // Completed interview -> redirect to archive
+          router.push(`/archive/${id}`);
+          return;
+        }
+
+        if (interview.status === 'session_end') {
+          // Resume conversation: load previous messages
+          const messagesRes = await fetch(`/api/messages?interviewId=${id}`);
+          if (messagesRes.ok) {
+            const previousMessages: Message[] = await messagesRes.json();
+            setMessages(previousMessages.map((m) => ({
+              id: m.id,
+              role: m.role as 'assistant' | 'user',
+              content: m.content,
+              timestamp: m.timestamp,
+            })));
+
+            // Extract last session date for divider
+            if (previousMessages.length > 0) {
+              const lastMsg = previousMessages[previousMessages.length - 1];
+              const lastDate = new Date(lastMsg.timestamp);
+              setLastSessionDate(lastDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }));
+            }
+
+            setShowResumeBanner(true);
+          }
+          return;
+        }
+
+        // First time or active: trigger AI first message
         sendMessage('');
-      });
-  }, [id, initialized, sendMessage]);
+      } catch (err) {
+        console.error('Failed to load interview:', err);
+      }
+    }
+
+    loadInterview();
+  }, [id, initialized, sendMessage, router]);
 
   // Recording complete handler (MicButton)
   const handleRecordingComplete = (blob: Blob, duration: number, mimeType: string) => {
@@ -409,6 +450,27 @@ export default function InterviewPage() {
     router.push(`/archive/${id}`);
   };
 
+  const handleResume = async () => {
+    setShowResumeBanner(false);
+
+    // Update status to active
+    try {
+      await fetch(`/api/create-interview`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          updates: { status: 'active' }
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    }
+
+    // Send resume message to AI (empty string triggers AI with context)
+    sendMessage('');
+  };
+
   // Progress: loosely tied to message count (max 20 exchanges = 100%)
   const progress = Math.min(100, messages.length * 5);
 
@@ -461,6 +523,24 @@ export default function InterviewPage() {
               timestamp={msg.timestamp}
             />
           ))}
+
+          {/* Date divider (resume banner) */}
+          {lastSessionDate && showResumeBanner && (
+            <>
+              <DateDivider date={`${lastSessionDate}의 대화`} />
+              <DateDivider date="오늘" />
+
+              {/* Resume button */}
+              <div className="my-4">
+                <button
+                  onClick={handleResume}
+                  className="h-[56px] w-full rounded-[6px] bg-bark text-[16px] font-medium text-warm-white transition-colors hover:bg-bark/90"
+                >
+                  이어서 이야기하기
+                </button>
+              </div>
+            </>
+          )}
 
           {/* Pending chunks (visual separation) */}
           {pendingChunks.length > 0 && (

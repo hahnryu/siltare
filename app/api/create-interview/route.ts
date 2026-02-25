@@ -1,7 +1,7 @@
 // TODO: add auth check here
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import { createInterview, getInterview } from '@/lib/store';
+import { createInterview, getInterview, updateInterview } from '@/lib/store';
 import { Interview } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
@@ -45,4 +45,19 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json(interview);
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const { id, updates } = await req.json();
+    if (!id) {
+      return NextResponse.json({ error: 'ID가 필요합니다' }, { status: 400 });
+    }
+
+    await updateInterview(id, updates);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('PATCH /api/create-interview error:', err);
+    return NextResponse.json({ error: '업데이트 실패' }, { status: 500 });
+  }
 }

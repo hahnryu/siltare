@@ -31,6 +31,32 @@ export async function POST(req: NextRequest) {
       })),
     ];
 
+    // Add resume context if returning from session_end (no user message + existing messages)
+    if (!message && existingMessages.length > 0 && interview.status === 'active') {
+      const lastAssistantMsg = [...existingMessages].reverse().find((m) => m.role === 'assistant');
+      const lastUserMsg = [...existingMessages].reverse().find((m) => m.role === 'user');
+
+      const resumeContext = lastAssistantMsg?.content
+        ? `중요: 사용자가 이전 대화를 이어가기 위해 돌아왔습니다.
+
+반드시 다음 형식으로 응답하세요:
+1. 짧은 인사 (예: "돌아오셨군요", "다시 뵙게 되어 반갑습니다", "다시 이야기 나눠볼까요?")
+2. 지난 대화 언급 (예: "지난번에 [주제] 이야기 하셨는데...")
+3. 자연스럽게 다음 질문
+
+지난 대화 마지막:
+- 제가 물었던 것: "${lastAssistantMsg.content}"
+${lastUserMsg ? `- 답변하신 것: "${lastUserMsg.content}"` : ''}
+
+이제 자연스럽게 인사하며 다음 질문을 해주세요.`
+        : `사용자가 이전 대화를 이어가기 위해 돌아왔습니다. "돌아오셨군요" 같은 짧은 인사 후 자연스럽게 다음 질문으로 이어주세요.`;
+
+      openaiMessages.push({
+        role: 'system' as const,
+        content: resumeContext,
+      });
+    }
+
     // Add user message if provided
     if (message) {
       const userSequence = existingMessages.length + 1;

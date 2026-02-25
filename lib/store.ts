@@ -56,9 +56,27 @@ export async function getInterview(id: string): Promise<Interview | null> {
 }
 
 export async function updateInterview(id: string, updates: Partial<Interview>): Promise<void> {
+  // Map camelCase to snake_case for Supabase
+  const dbUpdates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if ('status' in updates) dbUpdates.status = updates.status;
+  if ('transcript' in updates) dbUpdates.transcript = updates.transcript;
+  if ('summary' in updates) dbUpdates.summary = updates.summary;
+  if ('entities' in updates) dbUpdates.entities = updates.entities;
+  if ('messages' in updates) dbUpdates.messages = updates.messages;
+  if ('sessionCount' in updates) dbUpdates.session_count = updates.sessionCount;
+  if ('totalDurationSec' in updates) dbUpdates.total_duration_sec = updates.totalDurationSec;
+  if ('lastSessionAt' in updates) dbUpdates.last_session_at = updates.lastSessionAt;
+  if ('analysisImpression' in updates) dbUpdates.analysis_impression = updates.analysisImpression;
+  if ('analysisProfile' in updates) dbUpdates.analysis_profile = updates.analysisProfile;
+  if ('analysisDeep' in updates) dbUpdates.analysis_deep = updates.analysisDeep;
+  if ('autobiographyDraft' in updates) dbUpdates.autobiography_draft = updates.autobiographyDraft;
+
   const { error } = await supabase
     .from('interviews')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update(dbUpdates)
     .eq('id', id);
   if (error) throw new Error(`updateInterview failed: ${error.message}`);
 }
