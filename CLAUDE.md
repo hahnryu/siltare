@@ -1,7 +1,7 @@
 # CLAUDE.md - Siltare (실타래)
 
-> Last updated: 2026-02-25
-> Version: 0.4.0 (Messages table + Session management + Resume conversation)
+> Last updated: 2026-02-26
+> Version: 0.4.1 (Type fixes + Root cleanup + README update)
 
 ## Glossary
 
@@ -227,8 +227,10 @@ Business logic. Everything that is not UI.
 
 ```
 siltare/
-├── CLAUDE.md
+├── README.md                        # Project overview (updated 2/26)
+├── CLAUDE.md                        # Comprehensive project guide
 ├── FLOW-MAP.md                      # Business flow map (user flows, revenue, login policy)
+├── TOSS_PAYMENT_SETUP.md            # Payment integration guide (F-034)
 ├── supabase-audio-chunks-schema.sql # Audio chunks table DDL
 ├── supabase-session-upgrade.txt     # Session + analysis columns DDL (2/25)
 ├── middleware.ts                    # /dashboard auth protection (F-019)
@@ -248,6 +250,9 @@ siltare/
 │   ├── archive/[id]/page.tsx        # Archive (server component, real Supabase data)
 │   ├── edit/[id]/page.tsx           # [FUTURE] Transcript editing
 │   ├── book/[id]/page.tsx           # Book ordering (mockup)
+│   ├── payment/[interviewId]/page.tsx # Toss Payments widget (F-034)
+│   ├── payment/success/page.tsx     # Payment success
+│   ├── payment/fail/page.tsx        # Payment failure
 │   │
 │   │  -- Info Pages --
 │   ├── inspiration/page.tsx         # Inspiration page
@@ -270,6 +275,7 @@ siltare/
 │       ├── save-audio-chunk/route.ts # audio_chunks table insert
 │       ├── audio/[chunkId]/route.ts # Audio streaming proxy
 │       ├── audio-chunks/[interviewId]/route.ts # List audio chunks
+│       ├── payment/confirm/route.ts # Toss payment confirmation (F-034)
 │       └── auth/dashboard/route.ts  # Dashboard auth API (cookie-based)
 │
 ├── components/
@@ -279,6 +285,7 @@ siltare/
 │   │
 │   │  -- Interview --
 │   ├── ChatMessage.tsx              # AI/user message bubbles + timestamps (F-015)
+│   ├── DateDivider.tsx              # Date divider for multi-session (F-028)
 │   ├── MicButton.tsx                # Mic recording (MediaRecorder + Whisper)
 │   ├── ArchiveView.tsx              # Archive client rendering (3 states: 404/wip/complete)
 │   ├── AudioPlayer.tsx             # [FUTURE] Audio playback (archive, edit)
@@ -556,13 +563,14 @@ These define the product's essence. Never violate during feature additions or re
 11. This is a ritualistic life-story chatroom, not a one-time tool. Users return to continue their story across multiple sessions.
 12. Revenue comes from analysis, not conversation. First conversation is always free. Paid features: audio preservation, personality analysis, relationship dynamics, autobiography book.
 
-## Known Issues (2026-02-25)
+## Known Issues (2026-02-26)
 
 - **AI meta tag generation:** GPT-4o ignores prompt instructions to generate `<meta phase="..." topic="..."/>` tags. Parsing function exists but AI doesn't output tags. Workaround: separate API call for metadata generation (backlog).
-- **Interview page re-entry:** When user returns to /interview/[id] with session_end status, previous messages are not displayed. Need to load from messages table + show date divider.
-- **AI resume context:** No special prompt for continuing conversation. AI doesn't reference previous session when user returns.
+- ~~**Interview page re-entry:**~~ ✅ **FIXED (2/26)** - Previous messages now load with date divider. handleResume + PATCH endpoint implemented.
+- ~~**AI resume context:**~~ ✅ **FIXED (2/26)** - AI prompt enhanced with "중요" keyword + 3-step format (greeting → recall → next question).
 - KakaoTalk share: SDK + domain registered. Needs end-to-end testing.
 - F-014: Recording timer size change (text-2xl) needs verification on deployed build.
+- ~~**Build errors (2/26):**~~ ✅ **FIXED (2/26)** - TossPaymentsWidgets type error, FeedbackPriority "short" → "P1".
 
 ## Test Checklist
 
