@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { loadTossPayments, TossPaymentsWidgets } from '@tosspayments/tosspayments-sdk';
+import { loadTossPayments, type TossPaymentsWidgets } from '@tosspayments/tosspayments-sdk';
 
 const CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY!;
 
@@ -28,7 +28,7 @@ export default function PaymentPage() {
   useEffect(() => {
     (async () => {
       const tossPayments = await loadTossPayments(CLIENT_KEY);
-      const w = tossPayments.widgets({ customerKey: TossPaymentsWidgets.ANONYMOUS });
+      const w = tossPayments.widgets({ customerKey: 'ANONYMOUS' });
       await w.setAmount({ currency: 'KRW', value: product.amount });
       setWidgets(w);
     })();
