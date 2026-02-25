@@ -1,7 +1,7 @@
 export interface Interview {
   id: string;
   mode: 'invite' | 'self';
-  status: 'pending' | 'active' | 'paused' | 'complete';
+  status: 'pending' | 'active' | 'paused' | 'session_end' | 'complete';
   createdAt: string;
 
   requester?: {
@@ -18,11 +18,22 @@ export interface Interview {
   context: string[];
   context2?: string;
 
-  messages: Message[];
+  messages: Message[];  // 호환성 유지 (로드 시 messages 테이블에서 조합)
 
   transcript?: string;
   summary?: string;
   entities?: EntityData;
+
+  // session 관리
+  sessionCount?: number;
+  totalDurationSec?: number;
+  lastSessionAt?: string;
+
+  // 분석 결과
+  analysisImpression?: object;
+  analysisProfile?: object;
+  analysisDeep?: object;
+  autobiographyDraft?: object;
 
   payment?: {
     paymentKey: string;
@@ -34,13 +45,27 @@ export interface Interview {
   };
 }
 
+export interface MessageMeta {
+  phase?: 'orientation' | 'chronology' | 'pattern' | 'shadow' | 'core' | 'closing'
+        | 'opening' | 'context' | 'expansion';
+  topic?: string;
+  subtopic?: string;
+  questionType?: 'initial' | 'followup' | 'deepening' | 'transition' | 'closing';
+  intensity?: 'low' | 'mid' | 'high';
+  emotionDetected?: string;
+}
+
 export interface Message {
   id?: string;
-  role: 'assistant' | 'user';
+  role: 'assistant' | 'user' | 'requester';
   content: string;
   timestamp: string;
+  senderName?: string;
   audioUrl?: string;
   audioDuration?: number;
+  audioChunkId?: string;
+  meta?: MessageMeta;
+  sequence?: number;
 }
 
 export interface EntityData {

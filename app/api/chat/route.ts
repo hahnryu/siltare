@@ -1,56 +1,48 @@
 // TODO: add auth check here
 import { NextRequest } from 'next/server';
-import { getInterview, updateInterview } from '@/lib/store';
+import { getInterview, updateInterview, getMessages, createMessage } from '@/lib/store';
 import { generateSystemPrompt } from '@/lib/prompts';
-import { Interview, Message } from '@/lib/types';
+import { Message, MessageMeta } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
   try {
-    const { interviewId, message, interviewMeta, clientMessages } = await req.json();
+    const { interviewId, message } = await req.json();
 
-    // Try storage first; fall back to client-provided data (Vercel /tmp not shared across instances)
-    let interview = await getInterview(interviewId);
-
+    const interview = await getInterview(interviewId);
     if (!interview) {
-      if (!interviewMeta) {
-        return new Response('인터뷰를 찾을 수 없습니다', { status: 404 });
-      }
-      // Reconstruct from client-provided metadata and message history
-      interview = {
-        ...interviewMeta,
-        messages: (clientMessages || []).map((m: { role: string; content: string }) => ({
-          role: m.role as 'assistant' | 'user',
-          content: m.content,
-          timestamp: new Date().toISOString(),
-        })),
-      } as Interview;
+      return new Response('인터뷰를 찾을 수 없습니다', { status: 404 });
     }
 
     // Mark as active (best-effort, don't block on failure)
-    if (interview.status === 'pending') {
+    if (interview.status === 'pending' || interview.status === 'session_end') {
       updateInterview(interviewId, { status: 'active' }).catch(() => {});
     }
 
-    // Add user message to history
+    // Load existing messages from messages table
+    const existingMessages = await getMessages(interviewId);
+
+    // Build system prompt and OpenAI messages
+    const systemPrompt = generateSystemPrompt(interview);
+    const openaiMessages: { role: 'system' | 'assistant' | 'user'; content: string }[] = [
+      { role: 'system' as const, content: systemPrompt },
+      ...existingMessages.map((m) => ({
+        role: m.role as 'assistant' | 'user',
+        content: m.content,
+      })),
+    ];
+
+    // Add user message if provided
     if (message) {
+      const userSequence = existingMessages.length + 1;
       const userMsg: Message = {
         id: crypto.randomUUID(),
         role: 'user',
         content: message,
         timestamp: new Date().toISOString(),
       };
-      interview.messages.push(userMsg);
+      await createMessage(interviewId, userMsg, userSequence);
+      openaiMessages.push({ role: 'user' as const, content: message });
     }
-
-    // Build system prompt and OpenAI messages
-    const systemPrompt = generateSystemPrompt(interview);
-    const openaiMessages = [
-      { role: 'system' as const, content: systemPrompt },
-      ...interview.messages.map((m) => ({
-        role: m.role as 'assistant' | 'user',
-        content: m.content,
-      })),
-    ];
 
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -74,7 +66,6 @@ export async function POST(req: NextRequest) {
     const reader = openaiRes.body.getReader();
     const decoder = new TextDecoder();
     let fullContent = '';
-    const savedInterview = interview; // stable ref for closure
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -101,14 +92,23 @@ export async function POST(req: NextRequest) {
 
         // Save assistant message (best-effort, don't fail the stream)
         if (fullContent) {
+          const { cleanContent, meta } = parseMetaTag(fullContent);
+
+          // Get updated message count for sequence
+          const updatedMessages = await getMessages(interviewId);
+          const assistantSequence = updatedMessages.length + 1;
+
           const assistantMsg: Message = {
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: fullContent,
+            content: cleanContent,
             timestamp: new Date().toISOString(),
+            meta, // meta is optional, may be undefined
           };
-          savedInterview.messages.push(assistantMsg);
-          updateInterview(interviewId, { messages: savedInterview.messages }).catch(() => {});
+
+          await createMessage(interviewId, assistantMsg, assistantSequence).catch((err) => {
+            console.error('Failed to save assistant message:', err);
+          });
         }
 
         controller.close();
@@ -122,7 +122,36 @@ export async function POST(req: NextRequest) {
         'Connection': 'keep-alive',
       },
     });
-  } catch {
+  } catch (err) {
+    console.error('Chat API error:', err);
     return new Response('서버 오류', { status: 500 });
   }
+}
+
+function parseMetaTag(content: string): { cleanContent: string; meta?: MessageMeta } {
+  const metaMatch = content.match(/<meta\s+([^>]+)\/>\s*$/);
+  if (!metaMatch) {
+    return { cleanContent: content };
+  }
+
+  const attrs = metaMatch[1];
+  const meta: MessageMeta = {};
+
+  const phaseMatch = attrs.match(/phase="([^"]+)"/);
+  if (phaseMatch) meta.phase = phaseMatch[1] as MessageMeta['phase'];
+
+  const topicMatch = attrs.match(/topic="([^"]+)"/);
+  if (topicMatch) meta.topic = topicMatch[1];
+
+  const subtopicMatch = attrs.match(/subtopic="([^"]+)"/);
+  if (subtopicMatch) meta.subtopic = subtopicMatch[1];
+
+  const qtypeMatch = attrs.match(/qtype="([^"]+)"/);
+  if (qtypeMatch) meta.questionType = qtypeMatch[1] as MessageMeta['questionType'];
+
+  const intensityMatch = attrs.match(/intensity="([^"]+)"/);
+  if (intensityMatch) meta.intensity = intensityMatch[1] as MessageMeta['intensity'];
+
+  const cleanContent = content.replace(/<meta\s+[^>]+\/>\s*$/, '').trim();
+  return { cleanContent, meta };
 }

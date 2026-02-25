@@ -22,11 +22,13 @@ export async function POST(req: NextRequest) {
       .upload(path, audio, { contentType: mimeType });
 
     if (error) {
+      console.error('[ERROR] Audio upload failed:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ storagePath: path });
   } catch (err) {
+    console.error('[ERROR] Audio upload exception:', err);
     return NextResponse.json({ error: '서버 오류' }, { status: 500 });
   }
 }

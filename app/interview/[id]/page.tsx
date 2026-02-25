@@ -10,7 +10,7 @@ import { Interview } from '@/lib/types';
 
 const LABELS = {
   logo: '실타래',
-  inputPlaceholder: '메시지를 입력하세요...',
+  inputPlaceholder: '교정이 필요하면 여기에 입력하세요',
   addBtn: '추가',
   sendBtn: '전송',
   endBtn: '오늘은 여기까지',
@@ -140,9 +140,11 @@ export default function InterviewPage() {
               const delta = parsed.choices?.[0]?.delta?.content;
               if (delta) {
                 assistantContent += delta;
+                // Filter out meta tags from display (invisible to user)
+                const displayContent = assistantContent.replace(/<meta\s+[^>]+\/>\s*$/, '').trim();
                 setMessages((prev) => {
                   const next = [...prev];
-                  next[next.length - 1] = { ...next[next.length - 1], content: assistantContent };
+                  next[next.length - 1] = { ...next[next.length - 1], content: displayContent };
                   return next;
                 });
               }
@@ -399,7 +401,7 @@ export default function InterviewPage() {
       await fetch('/api/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interviewId: id }),
+        body: JSON.stringify({ interviewId: id, action: 'session_end' }),
       });
     } catch {
       // best-effort: proceed to archive even if summary generation fails

@@ -1,7 +1,7 @@
 # CLAUDE.md - Siltare (실타래)
 
 > Last updated: 2026-02-25
-> Version: 0.3.0 (Telegram voice UX + Audio architecture + Flow map)
+> Version: 0.4.0 (Messages table + Session management + Resume conversation)
 
 ## Glossary
 
@@ -61,25 +61,46 @@ Table schema:
 CREATE TABLE interviews (
   id           text PRIMARY KEY,
   mode         text,
-  status       text,
+  status       text,  -- 'pending' | 'active' | 'paused' | 'session_end' | 'complete'
   requester    jsonb,
   interviewee  jsonb,
   context      jsonb,
   context2     text,
-  messages     jsonb,
+  messages     jsonb,  -- DEPRECATED: use messages table instead
   transcript   text,
   summary      text,
   entities     jsonb,
+
+  -- Session management (NEW, 2/25)
+  session_count      integer DEFAULT 0,
+  total_duration_sec real DEFAULT 0,
+  last_session_at    timestamptz,
+
+  -- Analysis results (NEW, 2/25)
+  analysis_impression   jsonb,  -- 간략 인상 (1회차 후)
+  analysis_profile      jsonb,  -- 성격 프로파일 (3~5회차)
+  analysis_deep         jsonb,  -- 깊은 심리 분석 (10시간+)
+  autobiography_draft   jsonb,  -- 자서전 초안
+
   created_at   timestamptz DEFAULT now(),
   updated_at   timestamptz
 );
 ```
 
 Store functions (lib/store.ts):
-- createInterview(interview: Interview): Promise<void>
-- getInterview(id: string): Promise<Interview | null>
-- updateInterview(id: string, updates: Partial<Interview>): Promise<void>
-- getAllInterviews(): Promise<Interview[]>
+- **Interviews:**
+  - createInterview(interview: Interview): Promise<void>
+  - getInterview(id: string): Promise<Interview | null>
+  - updateInterview(id: string, updates: Partial<Interview>): Promise<void>
+  - getAllInterviews(): Promise<Interview[]>
+- **Messages (NEW, 2/25):**
+  - createMessage(interviewId, message, sequence): Promise<void>
+  - getMessages(interviewId): Promise<Message[]>
+  - getMessageCount(interviewId): Promise<number>
+- **Audio:**
+  - createAudioChunk(chunk: AudioChunk): Promise<void>
+  - getAudioChunks(interviewId: string): Promise<AudioChunk[]>
+  - updateAudioChunk(id: string, updates: Partial<AudioChunk>): Promise<void>
 
 MUST access data ONLY through these functions. No direct Supabase queries elsewhere.
 
@@ -119,6 +140,44 @@ Access through lib/store.ts:
 - createAudioChunk(chunk: AudioChunk): Promise<void>
 - getAudioChunks(interviewId: string): Promise<AudioChunk[]>
 - updateAudioChunk(id: string, updates: Partial<AudioChunk>): Promise<void>
+
+### Messages Storage: messages table (NEW, 2/25)
+
+**Messages separated from interviews JSONB to dedicated table.**
+Enables metadata queries, Supabase Realtime, and multi-session conversations.
+
+Schema:
+```sql
+CREATE TABLE messages (
+  id              text PRIMARY KEY,
+  interview_id    text NOT NULL REFERENCES interviews(id) ON DELETE CASCADE,
+  role            text NOT NULL,  -- 'assistant' | 'user' | 'requester' | 'system'
+  content         text NOT NULL,
+  sender_name     text,
+
+  -- Audio
+  audio_url       text,
+  audio_duration  real,
+  audio_chunk_id  text REFERENCES audio_chunks(id),
+
+  -- AI metadata (assistant only)
+  meta_phase      text,  -- 'orientation' | 'chronology' | 'pattern' | 'shadow' | 'core' | 'closing'
+  meta_topic      text,
+  meta_subtopic   text,
+  meta_qtype      text,  -- 'initial' | 'followup' | 'deepening' | 'transition' | 'closing'
+  meta_intensity  text,  -- 'low' | 'mid' | 'high'
+
+  sequence        integer NOT NULL,
+  created_at      timestamptz DEFAULT now()
+);
+```
+
+Access through lib/store.ts (see Store functions above).
+
+Migration:
+- New interviews save to messages table
+- getMessages() falls back to interviews.messages JSONB for backward compatibility
+- interviews.messages is DEPRECATED but kept for old data
 
 ## Design System
 
@@ -171,6 +230,7 @@ siltare/
 ├── CLAUDE.md
 ├── FLOW-MAP.md                      # Business flow map (user flows, revenue, login policy)
 ├── supabase-audio-chunks-schema.sql # Audio chunks table DDL
+├── supabase-session-upgrade.txt     # Session + analysis columns DDL (2/25)
 ├── middleware.ts                    # /dashboard auth protection (F-019)
 ├── app/
 │   ├── layout.tsx                   # Global layout + Kakao SDK script
@@ -204,7 +264,8 @@ siltare/
 │       ├── create-interview/route.ts
 │       ├── chat/route.ts            # GPT-4o SSE streaming
 │       ├── transcribe/route.ts      # Whisper speech-to-text
-│       ├── complete/route.ts        # Completion (summary + entity extraction)
+│       ├── complete/route.ts        # Completion (summary + entity extraction + session_end)
+│       ├── messages/route.ts        # GET messages from messages table (NEW, 2/25)
 │       ├── upload-audio/route.ts    # Audio upload to Supabase Storage
 │       ├── save-audio-chunk/route.ts # audio_chunks table insert
 │       ├── audio/[chunkId]/route.ts # Audio streaming proxy
@@ -254,14 +315,22 @@ Below shows future expansion direction. MUST NOT write code that blocks these ex
 
 ### Current (Supabase)
 ```
-interviews table (1 row = 1 conversation)
-├── id, mode, status
+interviews table (1 row = 1 interview project)
+├── id, mode, status (pending/active/paused/session_end/complete)
 ├── requester (jsonb: name, email, relationship)
 ├── interviewee (jsonb: name, ageGroup)
 ├── context (jsonb), context2
-├── messages (jsonb: full conversation array)
+├── messages (jsonb: DEPRECATED, use messages table)
 ├── transcript, summary, entities (jsonb)
+├── session_count, total_duration_sec, last_session_at
+├── analysis_impression, analysis_profile, analysis_deep, autobiography_draft
 └── created_at, updated_at
+
+messages table (1 row = 1 message) [NEW, 2/25]
+├── id, interview_id, role, content, sender_name
+├── audio_url, audio_duration, audio_chunk_id
+├── meta_phase, meta_topic, meta_subtopic, meta_qtype, meta_intensity
+├── sequence, created_at
 ```
 
 ### Audio Storage (NEW, 2/25)
@@ -276,6 +345,7 @@ Access: lib/store.ts createAudioChunk, getAudioChunks, updateAudioChunk
 - GET /api/audio/[chunkId]: Audio streaming proxy
 - GET /api/audio-chunks/[interviewId]: List audio chunks
 - POST /api/transcribe: Updated to verbose_json with segments
+- GET /api/messages?interviewId={id}: Load messages from messages table (NEW, 2/25)
 
 ### Future Expansion
 ```
@@ -312,8 +382,12 @@ Interview (1 record = one life-story project)
 ```
 
 ### MVP Principles
+- Messages are now in separate table (interviews.messages JSONB is deprecated).
+  New interviews use messages table. Old interviews fallback to JSONB.
 - Interview.messages[] will later become sessions[].messages[].
-  For now, keep as jsonb array in Supabase. MUST access only through store.ts functions.
+  For now, messages table is flat (no session grouping).
+- session_end status enables "continue conversation" flow.
+  AI picks up context from previous messages when user returns.
 - Original transcript and editedTranscript will be separate.
   MUST NOT overwrite transcript field directly.
 - End-user auth does not exist yet. Dashboard has simple ID/PW auth (middleware.ts).
@@ -374,9 +448,13 @@ Interview (1 record = one life-story project)
 - ChatMessage date+time display
 - "오늘은 여기까지" button visual enhancement
 - /request developer test button
+- **Messages table separation (2/25):** interviews.messages JSONB → messages table
+- **Session management (2/25):** session_end status, session_count, last_session_at
+- **Archive resume banner (2/25):** "이어서 이야기하기" button on session_end
+- **Analysis result fields (2/25):** impression, profile, deep, autobiography_draft columns
 
 ### Phase 1: Parents' Day MVP (May 8)
-- F-028: Continue conversation (session_end state, AI context pickup)
+- F-028: Continue conversation (session_end state ✅, AI context pickup + date divider 🔄)
 - F-029: /request voice input (GPT-4o parsing, fallback to form)
 - F-030: Greeting recording (requester voice message to interviewee)
 - F-031/032: Signup nudge (post-conversation for both parties)
@@ -392,7 +470,7 @@ Interview (1 record = one life-story project)
 - F-037/023: Group chat (requester in chatroom, Message.role: requester)
 - F-038: Knock/admission system (waiting room, permission, kick)
 - F-039: Relationship dynamics report (2+ person comparison, 29,000 KRW)
-- F-040: Messages table separation (jsonb → table, Supabase Realtime)
+- F-040: Messages table separation (CRUD + migration ✅, Supabase Realtime 🔄)
 - F-041: Kakao reminder notifications (automated, max 3 for interviewee)
 - F-024: Collaborative transcript editing
 - F-025: Self mode completion
@@ -478,9 +556,11 @@ These define the product's essence. Never violate during feature additions or re
 11. This is a ritualistic life-story chatroom, not a one-time tool. Users return to continue their story across multiple sessions.
 12. Revenue comes from analysis, not conversation. First conversation is always free. Paid features: audio preservation, personality analysis, relationship dynamics, autobiography book.
 
-## Known Bugs (2026-02-20)
+## Known Issues (2026-02-25)
 
-- "오늘은 여기까지" button click should navigate to /archive/[id] but flow is broken. FIX REQUIRED.
+- **AI meta tag generation:** GPT-4o ignores prompt instructions to generate `<meta phase="..." topic="..."/>` tags. Parsing function exists but AI doesn't output tags. Workaround: separate API call for metadata generation (backlog).
+- **Interview page re-entry:** When user returns to /interview/[id] with session_end status, previous messages are not displayed. Need to load from messages table + show date divider.
+- **AI resume context:** No special prompt for continuing conversation. AI doesn't reference previous session when user returns.
 - KakaoTalk share: SDK + domain registered. Needs end-to-end testing.
 - F-014: Recording timer size change (text-2xl) needs verification on deployed build.
 
@@ -490,8 +570,14 @@ These define the product's essence. Never violate during feature additions or re
 - [ ] /i/[id] -> consent -> /interview/[id] -> AI first message appears
 - [ ] Voice recording works (press-and-hold -> Whisper -> text appears)
 - [ ] Text input works -> AI responds via SSE streaming
-- [ ] "오늘은 여기까지" -> navigates to /archive/[id] (CURRENTLY BROKEN)
-- [ ] /archive/[id] shows real interview data from Supabase
+- [x] "오늘은 여기까지" -> navigates to /archive/[id] ✅
+- [x] /archive/[id] shows real interview data from Supabase ✅
+- [x] /archive/[id] shows full transcript + audio playback ✅
+- [x] "오늘은 여기까지" -> status becomes session_end ✅
+- [x] Archive shows "이어서 이야기하기" banner on session_end ✅
+- [ ] Click "이어서 이야기하기" -> previous messages displayed with date divider
+- [ ] AI resumes conversation with context from previous session
+- [x] Messages saved to messages table (not JSONB) ✅
 - [ ] /dashboard requires login (bts/arirang2026)
 - [ ] /dashboard/log is publicly accessible without login
 - [ ] KakaoTalk share button appears and works
@@ -538,10 +624,15 @@ Whisper API speech-to-text transcription with verbose_json format. Returns segme
 
 ### POST /api/complete
 ```
-Input: { interviewId: string }
-Output: { transcript: string, summary: string, entities: EntityData }
+Input: {
+  interviewId: string,
+  action?: 'session_end' | 'complete'  // default: 'complete'
+}
+Output: { transcript: string, summary: string, entities?: EntityData }
 ```
-Combines messages into transcript, GPT-4o generates summary + entity extraction.
+Combines messages into transcript, GPT-4o generates summary.
+- action='session_end': Updates status to session_end, increments session_count. Summary only.
+- action='complete': Updates status to complete, generates summary + entity extraction.
 
 ### POST /api/upload-audio
 ```
@@ -568,6 +659,13 @@ Streams audio file from Supabase Storage. Used by ArchiveView audio player.
 Output: { chunks: AudioChunk[] }
 ```
 Returns all audio chunks for an interview. Used by ArchiveView to map audio to messages.
+
+### GET /api/messages (NEW, 2/25)
+```
+Input: ?interviewId={id}
+Output: Message[]
+```
+Returns all messages for an interview from messages table. Falls back to interviews.messages JSONB if table is empty (backward compatibility).
 
 ### POST /api/auth/dashboard
 ```
@@ -646,13 +744,15 @@ Note: SUPABASE_SERVICE_ROLE_KEY bypasses RLS. Server-side only. NEVER expose to 
 Data in lib/feedback-data.ts.
 Business design in FLOW-MAP.md.
 
-Completed (17): F-001~F-004, F-002b, F-007, F-009, F-011~F-013, F-015~F-018, F-019, F-022, F-026
-In progress (3): F-005, F-014, F-025
-Phase 1 (11): F-010, F-027~F-036, F-046
+Completed (19): F-001~F-004, F-002b, F-007, F-009, F-011~F-013, F-015~F-019, F-022, F-026, F-028 (partial), F-040 (partial)
+In progress (3): F-005, F-014, F-025, F-028 (AI context), F-040 (Realtime)
+Phase 1 (11): F-010, F-027, F-029~F-036, F-046
 Phase 2 (10): F-006, F-023~F-024, F-037~F-041, F-047~F-049
 Phase 3 (4): F-042~F-045
 Hold (1): F-006
 Other (3): F-008, F-020, F-021
+
+Legend: ✅ = fully done, 🔄 = partially done
 
 ## Context
 

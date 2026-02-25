@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Interview } from '@/lib/types';
+import { Interview, Message } from '@/lib/types';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -134,12 +134,17 @@ function MsgAudioPlayer({ src }: { src: string }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function ArchiveView({ interview }: { interview: Interview }) {
+export function ArchiveView({ interview, messages: messagesProp }: { interview: Interview; messages?: Message[] }) {
   const router = useRouter();
   const [linkCopied, setLinkCopied] = useState(false);
   const [audioChunksMap, setAudioChunksMap] = useState<Record<number, string>>({});
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
   const hasKakao = !!process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
+
+  // Extract interview fields and prepare messages BEFORE any useEffect
+  const { id, interviewee, requester, mode, summary, entities, createdAt } = interview;
+  const messages = messagesProp || interview.messages || [];
+
   useFadeIn();
 
   // Fetch audio chunks for this interview
@@ -159,8 +164,6 @@ export function ArchiveView({ interview }: { interview: Interview }) {
       })
       .catch(() => {});
   }, [interview.id]);
-
-  const { id, interviewee, requester, mode, messages, summary, entities, createdAt } = interview;
 
   // Stats
   const userMsgCount = messages.filter((m) => m.role === 'user').length;
@@ -216,6 +219,32 @@ export function ArchiveView({ interview }: { interview: Interview }) {
 
   return (
     <main className="flex-1 py-8 md:py-14">
+      {/* Session End Banner: 이어하기 */}
+      {interview.status === 'session_end' && (
+        <section className="fade-up mx-auto mt-0 mb-8 max-w-2xl px-5">
+          <div className="rounded-[12px] border-2 border-amber bg-warm-white p-6 md:p-8">
+            <h2 className="font-serif text-[22px] font-bold text-bark mb-3">
+              소중한 이야기가 기록되었습니다.
+            </h2>
+            <p className="text-[16px] leading-relaxed text-stone mb-6">
+              다음에 이어서 하실 수 있습니다. 링크를 저장해두시면 언제든 돌아오실 수 있습니다.
+            </p>
+            <button
+              onClick={() => router.push(`/interview/${id}`)}
+              className="h-[56px] w-full rounded-[6px] bg-bark text-[16px] font-medium text-warm-white transition-colors hover:bg-bark/90 mb-3"
+            >
+              이어서 이야기하기
+            </button>
+            <button
+              onClick={handleShare}
+              className="h-[44px] w-full rounded-[6px] border border-mist bg-warm-white text-[14px] font-medium text-bark transition-colors hover:bg-mist-light"
+            >
+              {linkCopied ? '링크가 복사되었습니다 ✓' : '링크 복사하기'}
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* Back link */}
       <div className="mx-auto max-w-2xl px-5">
         <button
@@ -424,6 +453,28 @@ export function ArchiveView({ interview }: { interview: Interview }) {
           </div>
         )}
       </section>
+
+      {/* ── Self Mode: Family Expansion CTA ── */}
+      {mode === 'self' && (
+        <section className="fade-up mx-auto mt-12 max-w-2xl px-5">
+          <div className="rounded-[12px] border-2 border-amber/30 bg-warm-white p-8 text-center">
+            <h3 className="font-serif text-[22px] font-bold text-bark">
+              가족의 이야기도 남겨보세요.
+            </h3>
+            <p className="mt-3 text-[16px] leading-relaxed text-stone">
+              엄마, 아빠의 이야기를 직접 들어보세요.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                onClick={() => router.push('/request')}
+                className="h-[52px] w-full rounded-[6px] bg-bark text-[16px] font-medium text-warm-white transition-colors hover:bg-bark-light"
+              >
+                가족에게 실타래 보내기
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Bottom CTAs ── */}
       <section className="fade-up mx-auto mt-12 max-w-2xl px-5 pb-16">

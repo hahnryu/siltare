@@ -1,0 +1,15 @@
+-- ============================================================
+-- Interviews 테이블 업그레이드: session 관리 컬럼 추가
+-- Run this SQL in Supabase SQL Editor
+-- ============================================================
+
+-- session 관련 컬럼 추가
+ALTER TABLE interviews ADD COLUMN IF NOT EXISTS session_count integer DEFAULT 0;
+ALTER TABLE interviews ADD COLUMN IF NOT EXISTS total_duration_sec real DEFAULT 0;
+ALTER TABLE interviews ADD COLUMN IF NOT EXISTS last_session_at timestamptz;
+
+-- 분석 결과 저장
+ALTER TABLE interviews ADD COLUMN IF NOT EXISTS analysis_impression jsonb;   -- 간략 인상 (1회차 후)
+ALTER TABLE interviews ADD COLUMN IF NOT EXISTS analysis_profile jsonb;      -- 성격 프로파일 (3~5회차)
+ALTER TABLE interviews ADD COLUMN IF NOT EXISTS analysis_deep jsonb;         -- 깊은 심리 분석 (10시간+)
+ALTER TABLE interviews ADD COLUMN IF NOT EXISTS autobiography_draft jsonb;   -- 자서전 초안

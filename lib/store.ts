@@ -24,7 +24,7 @@
  */
 
 import { supabase } from './supabase';
-import { Interview, AudioChunk } from './types';
+import { Interview, AudioChunk, Message, MessageMeta } from './types';
 
 export async function createInterview(interview: Interview): Promise<void> {
   const { error } = await supabase
@@ -86,6 +86,13 @@ function rowToInterview(row: any): Interview {
     transcript: row.transcript,
     summary: row.summary,
     entities: row.entities,
+    sessionCount: row.session_count,
+    totalDurationSec: row.total_duration_sec,
+    lastSessionAt: row.last_session_at,
+    analysisImpression: row.analysis_impression,
+    analysisProfile: row.analysis_profile,
+    analysisDeep: row.analysis_deep,
+    autobiographyDraft: row.autobiography_draft,
     createdAt: row.created_at,
   };
 }
@@ -162,5 +169,100 @@ function rowToAudioChunk(row: any): AudioChunk {
     speakerLabel: row.speaker_label,
     isVerified: row.is_verified,
     createdAt: row.created_at,
+  };
+}
+
+// ========== Message CRUD (messages 테이블) ==========
+
+export async function createMessage(
+  interviewId: string,
+  message: Message,
+  sequence: number
+): Promise<void> {
+  const { error } = await supabase.from('messages').insert({
+    id: message.id || crypto.randomUUID(),
+    interview_id: interviewId,
+    role: message.role,
+    content: message.content,
+    sender_name: message.senderName,
+    audio_url: message.audioUrl,
+    audio_duration: message.audioDuration,
+    audio_chunk_id: message.audioChunkId,
+    meta_phase: message.meta?.phase,
+    meta_topic: message.meta?.topic,
+    meta_subtopic: message.meta?.subtopic,
+    meta_qtype: message.meta?.questionType,
+    meta_intensity: message.meta?.intensity,
+    sequence,
+    created_at: message.timestamp || new Date().toISOString(),
+  });
+  if (error) throw new Error(`createMessage failed: ${error.message}`);
+}
+
+export async function getMessages(interviewId: string): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('interview_id', interviewId)
+    .order('sequence', { ascending: true });
+
+  if (error) throw new Error(`getMessages failed: ${error.message}`);
+
+  // messages 테이블에 데이터가 있으면 사용
+  if (data && data.length > 0) {
+    return data.map(rowToMessage);
+  }
+
+  // 없으면 interview.messages JSONB에서 폴백 (호환성)
+  const { data: interview } = await supabase
+    .from('interviews')
+    .select('messages')
+    .eq('id', interviewId)
+    .single();
+
+  if (interview?.messages && Array.isArray(interview.messages)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return interview.messages.map((m: any, i: number) => ({
+      ...m,
+      sequence: i + 1,
+    }));
+  }
+
+  return [];
+}
+
+export async function getMessageCount(interviewId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('interview_id', interviewId);
+  if (error) throw new Error(`getMessageCount failed: ${error.message}`);
+  return count || 0;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToMessage(row: any): Message {
+  const meta: MessageMeta | undefined =
+    row.meta_phase || row.meta_topic
+      ? {
+          phase: row.meta_phase,
+          topic: row.meta_topic,
+          subtopic: row.meta_subtopic,
+          questionType: row.meta_qtype,
+          intensity: row.meta_intensity,
+        }
+      : undefined;
+
+  return {
+    id: row.id,
+    role: row.role,
+    content: row.content,
+    timestamp: row.created_at,
+    senderName: row.sender_name,
+    audioUrl: row.audio_url,
+    audioDuration: row.audio_duration,
+    audioChunkId: row.audio_chunk_id,
+    meta,
+    sequence: row.sequence,
   };
 }

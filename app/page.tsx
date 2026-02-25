@@ -27,40 +27,40 @@ function useFadeIn() {
 const HOW_STEPS = [
   {
     num: '1',
-    title: '관계를 선택합니다',
-    desc: '부모님, 스승, 친구, 누구든. 듣고 싶은 이야기를 적습니다.',
+    title: '시작하기',
+    desc: '버튼 하나 누르면 AI 인터뷰가 시작됩니다.\n가입도, 설치도, 준비도 필요 없습니다.',
   },
   {
     num: '2',
-    title: '링크를 보냅니다',
-    desc: '카카오톡, 문자, 어떤 방법이든. 가입 절차 없습니다.',
+    title: '말하면 됩니다',
+    desc: '마이크 버튼을 누르고 말씀하세요.\n타이핑은 필요 없습니다. 교정할 때만.',
   },
   {
     num: '3',
-    title: 'AI가 대화를 시작합니다',
-    desc: '상대방이 링크를 열면, AI가 생애사를 체계적으로 묻습니다.\n출생부터 지금까지. 당신이 듣고 싶었던 것을 중심으로.\n대화 중에 당신도 직접 질문을 추가할 수 있습니다.',
+    title: 'AI가 깊이 묻습니다',
+    desc: '어린 시절, 전환점, 후회, 감사.\n답변에 따라 더 깊이 들어갑니다.\n아이작슨이 잡스를 인터뷰하듯.',
   },
   {
     num: '4',
-    title: '말하면 됩니다',
-    desc: '타이핑할 필요 없습니다. 음성으로 답하면 됩니다.\n여러 차례에 걸친 대화가 쌓여 기록이 됩니다.',
+    title: '기록이 남습니다',
+    desc: '음성 원본과 전사본, AI 요약이 함께.\n시간이 지나도 사라지지 않는 기록.',
   },
   {
     num: '5',
-    title: '기록이 도착합니다',
-    desc: '"아버지의 이야기가 도착했습니다."\n음성 원본과 전사본, AI 요약이 함께.\n책으로 만들 수도 있습니다.',
+    title: '가족에게 보내세요',
+    desc: '내 이야기를 하다 보면, 엄마 아빠 이야기가 나옵니다.\n링크 하나로 가족의 이야기도 남길 수 있습니다.',
   },
   {
     num: '6',
     title: '기록이 기록을 부릅니다',
-    desc: '대화 속에 등장한 사람에게 실타래를 보낼 수 있습니다.\n개인의 기록이 모여 세대의 기억이 됩니다.',
+    desc: '한 사람의 이야기가 다음 이야기를 만듭니다.\n개인의 목소리가 모여 가족의 서사가 됩니다.',
   },
 ];
 
 const WHY_ITEMS = [
   {
-    title: '콜드스타트가 없습니다',
-    desc: '기존 서비스는 두 사람이 동시에 시간을 내거나,\n혼자 카메라 앞에서 말해야 합니다.\n실타래는 링크 하나 보내면 끝입니다.\n부모님이 편한 시간에, 자기 속도로. AI가 대화 상대가 됩니다.',
+    title: '3초 만에 시작합니다',
+    desc: '버튼 하나로 바로 시작. 가입도 앱도 필요 없습니다.\nAI가 대화 상대가 됩니다.\n편한 시간에, 자기 속도로.',
   },
   {
     title: 'AI가 사람보다 깊이 묻습니다',
@@ -101,36 +101,44 @@ export default function HomePage() {
               silt&apos;aræ
             </p>
             <p className="mt-5 font-serif text-[20px] font-light leading-relaxed text-leaf">
-              AI와 함께 풀어내는 귀한 분의 생애사
-            </p>
-            <p className="mt-6 text-[19px] font-medium leading-snug text-bark">
-              부모님이 아직 곁에 계신가요?
-            </p>
-            <p className="mt-1 text-[17px] leading-relaxed text-stone">
-              더 늦기 전에 남겨두세요.
+              모든 사람의 인생은 한 권의 책입니다.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3">
+            {/* 블록 1: 셀프 인터뷰 (메인) */}
+            <div className="mt-10 rounded-[12px] border border-mist bg-warm-white p-6">
               <Link
-                href="/request"
+                href="/self"
                 className="flex h-[56px] w-full items-center justify-center rounded-[6px] bg-bark text-[17px] font-medium text-warm-white shadow-sm transition-colors hover:bg-bark-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber"
               >
-                부모님께 실타래 보내기
+                내 이야기 시작하기
               </Link>
-              <a
-                href="#how"
-                className="flex h-[48px] w-full items-center justify-center rounded-[6px] border border-mist bg-warm-white text-[15px] font-medium text-bark transition-colors hover:bg-mist-light"
-              >
-                어떻게 작동하나요?
-              </a>
+              <p className="mt-4 text-[15px] leading-relaxed text-stone">
+                AI가 묻고, 기록하고, 당신을 분석합니다.<br />
+                나도 몰랐던 내가 보입니다.
+              </p>
             </div>
 
-            <p className="mt-10 text-[15px] leading-[2.1] text-stone">
-              링크를 보내면, AI가 당신을 대신해<br />
-              부모님의 생애를 묻고 기록하고 정리합니다.<br />
-              어린 시절, 견뎌온 것, 당신에게 주고 싶었던 것.<br />
-              당신이 차마 묻지 못한 그 질문, 대신 여쭤 드립니다.
-            </p>
+            {/* 구분선 */}
+            <div className="my-8 flex items-center justify-center">
+              <div className="h-px w-12 bg-mist" aria-hidden="true" />
+            </div>
+
+            {/* 블록 2: 부모님 인터뷰 (서브) */}
+            <div className="text-center">
+              <p className="text-[17px] font-medium leading-snug text-bark">
+                부모님이 아직 곁에 계신가요?
+              </p>
+              <Link
+                href="/request"
+                className="mt-5 inline-flex h-[48px] items-center justify-center rounded-[6px] border border-mist bg-transparent px-10 text-[15px] font-medium text-bark transition-colors hover:bg-mist-light"
+              >
+                부모님께 보내기
+              </Link>
+              <p className="mt-4 text-[15px] leading-relaxed text-stone">
+                더 늦기 전에 남겨두세요.<br />
+                당신이 차마 묻지 못한 질문, 대신 여쭤 드립니다.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -142,7 +150,7 @@ export default function HomePage() {
                 How It Works
               </p>
               <h2 className="mt-3 font-serif text-[32px] font-bold text-bark">
-                링크 하나로 시작합니다.
+                말하면 됩니다.
               </h2>
               <p className="mt-2 text-[16px] text-stone">
                 가입 없이. 앱 설치 없이.
@@ -175,9 +183,9 @@ export default function HomePage() {
         <section className="fade-up bg-bark px-6 py-20 text-center">
           <blockquote className="mx-auto max-w-[480px]">
             <p className="font-serif text-[24px] font-light leading-[2.2] text-warm-white sm:text-[28px]">
-              부모님이 살아 계시는 동안<br />
-              내가 묻지 못한 질문을<br />
-              대신 여쭤 드리는 도구.
+              AI가 묻고<br />
+              당신은 말하면 됩니다.<br />
+              기록은 실타래가 합니다.
             </p>
           </blockquote>
         </section>
@@ -213,21 +221,27 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── Section 5: Self Mode ── */}
-        <section className="fade-up bg-mist-light px-6 py-16 text-center">
+        {/* ── Section 5: 분석 소개 ── */}
+        <section className="fade-up bg-mist-light px-6 py-20 text-center">
           <div className="mx-auto max-w-[520px]">
             <h2 className="font-serif text-[26px] font-bold text-bark">
-              내 이야기를 남기고 싶다면.
+              기록을 넘어, 발견.
             </h2>
             <p className="mt-4 text-[16px] leading-[1.9] text-stone">
-              셀프 모드로 나의 생애를 직접 기록할 수 있습니다.<br />
-              AI가 묻고, 나는 말하면 됩니다.
+              AI가 당신의 대화를 분석합니다.<br />
+              자주 쓰는 단어, 감정 패턴, 가장 오래 머문 주제.<br />
+              나도 몰랐던 내가 보입니다.
+            </p>
+            <p className="mt-6 text-[16px] leading-[1.9] text-stone">
+              부모님께 보내셨다면,<br />
+              &quot;아버지는 이런 분이셨습니다&quot; 리포트를 받아보세요.<br />
+              평생 몰랐던 부모님의 내면을 만날 수 있습니다.
             </p>
             <Link
-              href="/self"
-              className="mt-8 inline-flex h-[52px] items-center justify-center rounded-[6px] bg-bark px-10 text-[16px] font-medium text-warm-white transition-colors hover:bg-bark-light"
+              href="/request"
+              className="mt-8 inline-flex h-[52px] items-center justify-center rounded-[6px] border border-mist bg-warm-white px-10 text-[16px] font-medium text-bark transition-colors hover:bg-mist-light"
             >
-              내 이야기 시작하기
+              가족에게 실타래 보내기
             </Link>
           </div>
         </section>
@@ -260,15 +274,20 @@ export default function HomePage() {
             <h2 className="font-serif text-[30px] font-bold text-bark">
               아직 늦지 않았습니다.
             </h2>
-            <p className="mt-4 text-[17px] text-stone">
-              링크 하나를 보내주세요.
-            </p>
-            <Link
-              href="/request"
-              className="mt-8 inline-flex h-[56px] items-center justify-center rounded-[6px] bg-bark px-12 text-[17px] font-medium text-warm-white shadow-sm transition-colors hover:bg-bark-light"
-            >
-              실타래 보내기
-            </Link>
+            <div className="mt-8 flex flex-col gap-4">
+              <Link
+                href="/self"
+                className="flex h-[56px] w-full items-center justify-center rounded-[6px] bg-bark text-[17px] font-medium text-warm-white shadow-sm transition-colors hover:bg-bark-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber"
+              >
+                내 이야기 시작하기
+              </Link>
+              <Link
+                href="/request"
+                className="flex h-[48px] w-full items-center justify-center rounded-[6px] border border-mist bg-transparent text-[15px] font-medium text-bark transition-colors hover:bg-mist-light"
+              >
+                부모님께 보내기
+              </Link>
+            </div>
           </div>
         </section>
       </main>

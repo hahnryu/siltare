@@ -1,11 +1,12 @@
 import Link from 'next/link';
-import { getInterview } from '@/lib/store';
+import { getInterview, getMessages } from '@/lib/store';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ArchiveView } from '@/components/ArchiveView';
 
 export default async function ArchivePage({ params }: { params: { id: string } }) {
   const interview = await getInterview(params.id);
+  const messages = interview ? await getMessages(params.id) : [];
 
   // ── Not found ────────────────────────────────────────────────────────────
   if (!interview) {
@@ -30,7 +31,8 @@ export default async function ArchivePage({ params }: { params: { id: string } }
   }
 
   // ── In progress ───────────────────────────────────────────────────────────
-  if (interview.status !== 'complete') {
+  // session_end와 complete는 ArchiveView를 표시 (일시 정지 또는 완료)
+  if (interview.status === 'pending' || interview.status === 'active' || interview.status === 'paused') {
     const statusLabel =
       interview.status === 'active'
         ? '진행 중인'
@@ -49,7 +51,7 @@ export default async function ArchivePage({ params }: { params: { id: string } }
             대화가 완료되면 이 페이지에서<br />기록과 요약을 볼 수 있습니다.
           </p>
           <p className="mt-2 text-[14px] text-stone">
-            현재 {interview.messages.length}개의 메시지가 기록되어 있습니다.
+            현재 {messages.length}개의 메시지가 기록되어 있습니다.
           </p>
           <Link
             href="/"
@@ -63,11 +65,11 @@ export default async function ArchivePage({ params }: { params: { id: string } }
     );
   }
 
-  // ── Complete ──────────────────────────────────────────────────────────────
+  // ── Session End or Complete ──────────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-svh flex-col bg-cream">
       <Header />
-      <ArchiveView interview={interview} />
+      <ArchiveView interview={interview} messages={messages} />
       <Footer />
     </div>
   );
