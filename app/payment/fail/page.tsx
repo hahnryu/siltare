@@ -1,10 +1,9 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-
-export default function PaymentFailPage() {
+function PaymentFailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const code = searchParams.get('code');
@@ -31,5 +30,17 @@ export default function PaymentFailPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function PaymentFailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAF6F0' }}>
+        <p style={{ color: '#8B7355' }}>로딩 중...</p>
+      </div>
+    }>
+      <PaymentFailContent />
+    </Suspense>
   );
 }
