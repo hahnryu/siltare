@@ -293,14 +293,6 @@ export default function HomePage() {
       </main>
 
       <Footer />
-      <div className="py-2 text-center">
-        <Link
-          href="/dashboard"
-          className="text-[11px] text-stone/40 transition-colors hover:text-stone"
-        >
-          관리자
-        </Link>
-      </div>
     </div>
   );
 }

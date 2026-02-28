@@ -1,0 +1,15 @@
+// ==========================================
+// 랜딩 페이지 하단 관리자 링크 백업
+// 원래 위치: app/page.tsx (296-303번 줄)
+// ==========================================
+
+// Footer 컴포넌트 바로 아래에 삽입
+
+<div className="py-2 text-center">
+  <Link
+    href="/dashboard"
+    className="text-[11px] text-stone/40 transition-colors hover:text-stone"
+  >
+    관리자
+  </Link>
+</div>

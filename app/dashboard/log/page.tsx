@@ -110,18 +110,6 @@ export default function DevLogPage() {
           <p className="mt-2 text-[15px] text-stone">
             총 {total}개 항목 · {doneCount}개 완료 · {wipCount}개 진행중 · {todoCount}개 예정
           </p>
-          <div className="mt-4 rounded-lg border border-amber/30 bg-amber/5 p-4">
-            <p className="text-[14px] text-bark">
-              📋 <a
-                href="https://github.com/hahnryu/siltare/blob/main/FLOW-MAP.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium underline hover:text-amber"
-              >
-                플로우 맵 (FLOW-MAP.md)
-              </a> - 유저 플로우, 상태 전이, 수익 모델, 로그인 정책
-            </p>
-          </div>
 
           {/* Progress bar */}
           <div className="mt-5">

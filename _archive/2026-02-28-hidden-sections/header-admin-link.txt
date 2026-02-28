@@ -1,0 +1,13 @@
+// ==========================================
+// 헤더 관리자 링크 백업
+// 원래 위치: components/Header.tsx (56-61번 줄)
+// ==========================================
+
+// "개발 로그" 링크와 "시작하기" 버튼 사이에 삽입
+
+<Link
+  href="/dashboard"
+  className="text-[14px] text-stone hover:text-bark transition-colors"
+>
+  관리자
+</Link>

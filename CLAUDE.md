@@ -1,7 +1,7 @@
 # CLAUDE.md - Siltare (실타래)
 
-> Last updated: 2026-02-26
-> Version: 0.4.1 (Type fixes + Root cleanup + README update)
+> Last updated: 2026-02-28
+> Version: 0.4.2 (Hidden UI elements + JOURNAL.md guide)
 
 ## Glossary
 
@@ -571,6 +571,52 @@ These define the product's essence. Never violate during feature additions or re
 - KakaoTalk share: SDK + domain registered. Needs end-to-end testing.
 - F-014: Recording timer size change (text-2xl) needs verification on deployed build.
 - ~~**Build errors (2/26):**~~ ✅ **FIXED (2/26)** - TossPaymentsWidgets type error, FeedbackPriority "short" → "P1".
+
+## Hidden UI Elements (2026-02-28)
+
+일부 UI 요소들은 외부 공개시 숨김 처리되었습니다. 복구가 필요할 경우 `_archive/2026-02-28-hidden-sections/` 폴더에서 코드를 찾을 수 있습니다.
+
+**숨긴 요소:**
+- **수익 모델 섹션** (`app/vision/page.tsx`) - REVENUE_TIERS, REVENUE_NOTES 상수 + Revenue 섹션 JSX
+- **비즈니스 모델 섹션** (`app/vision/page.tsx`) - 8-Week Plan, Roadmap "결제" 언급, Global "독립 수익원" 언급
+- **플로우맵 링크** (`app/dashboard/log/page.tsx`) - 개발 로그 페이지의 FLOW-MAP.md 링크 박스
+- **관리자 페이지 링크** (`components/Header.tsx`, `app/page.tsx`) - 헤더와 랜딩 페이지 하단의 /dashboard 링크
+
+**백업 위치:**
+- `_archive/2026-02-28-hidden-sections/vision-revenue-section.txt`
+- `_archive/2026-02-28-hidden-sections/vision-business-sections.txt` (2차 추가)
+- `_archive/2026-02-28-hidden-sections/log-flowmap-link.txt`
+- `_archive/2026-02-28-hidden-sections/header-admin-link.txt`
+- `_archive/2026-02-28-hidden-sections/landing-admin-link.txt`
+- `_archive/2026-02-28-hidden-sections/README.md` - 복구 방법 안내
+
+**복구 방법:**
+각 백업 파일의 코드를 원래 위치에 복사하여 붙여넣기. 자세한 내용은 백업 폴더의 README.md 참조.
+
+## Development Journal
+
+**JOURNAL.md**: 개발 과정의 주요 결정사항, 실험, 학습 내용을 기록하는 일지 파일입니다.
+
+**사용 지침:**
+- 새로운 기능 구현, 아키텍처 변경, 중요한 버그 수정시 JOURNAL.md에 기록
+- 날짜 역순 정렬 (최신 항목이 위)
+- 각 항목 포맷:
+  ```markdown
+  ## YYYY-MM-DD - 제목
+
+  **상황**: 무엇을 하려고 했는가
+  **시도**: 어떤 접근을 했는가
+  **결과**: 무엇을 배웠는가
+  **참고**: 관련 파일, 커밋, 이슈 링크
+  ```
+- CLAUDE.md는 프로젝트 가이드 (변하지 않는 구조), JOURNAL.md는 시간순 개발 기록 (변화의 흐름)
+
+**기록 대상:**
+- 아키텍처 결정 (왜 Supabase를 선택했는가, 왜 messages 테이블을 분리했는가)
+- 성능 최적화 (어떤 문제가 있었고 어떻게 해결했는가)
+- 실패한 시도 (무엇이 작동하지 않았고 왜인가)
+- 외부 API 통합 (Toss Payments, Kakao SDK 등의 설정 과정)
+- 프롬프트 엔지니어링 실험 (AI 대화 품질 개선 과정)
 
 ## Test Checklist
 

@@ -1,0 +1,54 @@
+// ==========================================
+// 수익 모델 섹션 백업
+// 원래 위치: app/vision/page.tsx
+// ==========================================
+
+// ── 1. 데이터 상수 (92-102번 줄 영역) ──
+
+const REVENUE_TIERS = [
+  { name: '무료', price: '₩0', features: ['AI 대화 1회', '텍스트 아카이브', '공유 링크'], featured: false },
+  { name: '선물', price: '₩39,000', features: ['음성 원본 보관', 'AI 전사본 + 요약', '가족 공유', '이메일 전달'], featured: true },
+  { name: '자서전', price: '₩59,000~', features: ['위 모두 포함', '소프트커버 책 1권', '표지 커스터마이징'], featured: false },
+];
+
+const REVENUE_NOTES = [
+  { title: '왜 카카오톡인가', body: '50-70대 부모님이 가장 많이 쓰는 채널. 링크 하나로 시작. 카카오 선물하기 "경험" 카테고리 입점이 핵심 마일스톤.' },
+  { title: '시즌 비즈니스', body: '어버이날(5월), 추석, 설 전후 구매 피크. 비시즌에는 "기록이 기록을 부르는" 바이럴 루프로 상시 전환.' },
+  { title: 'B2B 확장', body: '요양원, 종중, 종교 단체, 지자체 구술사 프로그램, 대학 구술 아카이브, 장례/추모 서비스. 기관 단위 계약 가능.' },
+];
+
+// ── 2. JSX 섹션 (246-278번 줄 영역) ──
+// Roadmap 섹션과 Global Quote 섹션 사이에 위치
+
+<FadeSection>
+  <p className="text-[11px] uppercase tracking-[0.18em] text-stone mb-4">Revenue</p>
+  <h2 className="font-serif text-[clamp(24px,3.5vw,34px)] font-bold text-bark mb-8">수익 모델</h2>
+  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    {REVENUE_TIERS.map((t) => (
+      <div
+        key={t.name}
+        className={`rounded-[6px] border p-6 ${
+          t.featured ? 'border-bark bg-bark text-cream' : 'border-mist bg-warm-white'
+        }`}
+      >
+        <p className={`text-[11px] font-medium tracking-[0.1em] uppercase mb-1.5 ${t.featured ? 'text-stone' : 'text-stone'}`}>{t.name}</p>
+        <p className={`font-['Cormorant_Garamond',Georgia,serif] text-[24px] font-semibold mb-3 ${t.featured ? 'text-cream' : 'text-bark'}`}>{t.price}</p>
+        <ul className="flex flex-col gap-1">
+          {t.features.map((f) => (
+            <li key={f} className={`text-[13px] font-light leading-[1.6] ${t.featured ? 'text-stone' : 'text-stone'}`}>
+              · {f}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+  <div className="mt-10 flex flex-col gap-6">
+    {REVENUE_NOTES.map((note) => (
+      <div key={note.title}>
+        <h3 className="font-serif text-[16px] font-bold text-bark mb-1.5">{note.title}</h3>
+        <p className="text-[15px] text-stone font-light leading-[1.8]">{note.body}</p>
+      </div>
+    ))}
+  </div>
+</FadeSection>
