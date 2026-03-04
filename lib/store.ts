@@ -97,6 +97,16 @@ export async function getAllInterviews(): Promise<Interview[]> {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToInterview(row: any): Interview {
+  // Parse autobiography_draft if it's a string (from older data)
+  let autobiographyDraft = row.autobiography_draft;
+  if (typeof autobiographyDraft === 'string' && autobiographyDraft) {
+    try {
+      autobiographyDraft = JSON.parse(autobiographyDraft);
+    } catch {
+      // If parsing fails, leave as is
+    }
+  }
+
   return {
     id: row.id,
     mode: row.mode,
@@ -115,7 +125,7 @@ function rowToInterview(row: any): Interview {
     analysisImpression: row.analysis_impression,
     analysisProfile: row.analysis_profile,
     analysisDeep: row.analysis_deep,
-    autobiographyDraft: row.autobiography_draft,
+    autobiographyDraft,
     chapterContext: row.chapter_context,
     chapterMap: row.chapter_map,
     diagnosis: row.diagnosis,
