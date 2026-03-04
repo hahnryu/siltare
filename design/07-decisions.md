@@ -1,10 +1,50 @@
 # 07. 주요 결정 로그
 
-마지막 업데이트: 2026-03-04
+마지막 업데이트: 2026-03-05
 
 ---
 
 최신 항목이 위에 옵니다.
+
+---
+
+## 2026-03-05 - DB 구조 기술부채 기록
+
+현재 구조의 문제점:
+
+1. interviews 테이블 과부하
+   - 메타, 상태, 결과물, 통계, 분석이 한 행에 혼재
+   - autobiography_draft가 챕터별 JSONB로 커질수록 행이 비대해짐
+
+2. messages 이중 구조
+   - interviews.messages JSONB + 별도 messages 테이블 공존
+   - 어느 게 진짜인지 모호한 상태
+
+3. sessions 테이블 없음
+   - 세션별 요약, duration, 메시지 범위 추적 불가
+   - chapter_context.sessionNum으로 숫자만 추적 중
+
+4. autobiography_draft 버전 관리 불가
+   - 편집 이력, 버전 관리 필요 시 별도 테이블 필요
+
+이상적인 구조 (리팩토링 목표):
+
+```
+interviews     // 프로젝트 메타만. 가볍게.
+sessions       // 세션 단위 기록 (chapter_num, session_num, duration, summary)
+messages       // session_id 연결
+chapters       // 챕터 결과물 (draft, diagnosis, entities, chapter_map)
+audio_chunks   // session_id 연결
+```
+
+리팩토링 시점:
+어버이날(5월 8일) 이후, 본격 사용자 유입 전.
+지금은 MVP 구조로 버팀. 데이터 마이그레이션 필요.
+
+현재 MVP에서 버티는 이유:
+- 지금 구조로 어버이날까지는 작동함
+- 리팩토링 중 서비스 중단 리스크보다 출시가 우선
+- 사용자 데이터가 쌓이기 전에 마이그레이션이 훨씬 쉬움
 
 ---
 
