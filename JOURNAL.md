@@ -5,6 +5,60 @@
 
 ---
 
+## 2026-03-05 - 초고 편집 기능 + 대시보드 실시간 데이터 연동
+
+**상황**
+
+챕터 완주 후 생성된 초고를 유저가 직접 편집할 수 있어야 했다.
+또한 대시보드가 더미 데이터만 보여주고 있어 실제 인터뷰 데이터와 연동이 필요했다.
+
+**시도**
+
+1. archive 페이지 초고 섹션 구현
+   - autobiography_draft JSONB에서 챕터별 초고 추출
+   - 읽기/편집 모드 전환
+   - /api/update-draft PATCH 엔드포인트
+
+2. 대시보드 실시간 데이터 연동
+   - /api/interviews GET 엔드포인트 (getAllInterviews)
+   - 상태별 버튼 조건부 표시 (초고 생성, 컨텍스트 초기화)
+   - /api/init-chapter-context: 레거시 데이터 초기화용
+
+3. generateDraftPrompt 완전 재작성
+   - 기존: 시간순 나열
+   - 변경: 가장 강렬한 장면으로 시작 → 감정 흐름순 재구성
+   - 이유: 연대기는 이력서, 자서전은 감정의 궤적
+
+**결과**
+
+**버그 발견: Next.js 서버 컴포넌트 캐시 이슈**
+
+autobiography_draft가 DB에는 있는데 ArchiveView에서 null로 받아지는 문제.
+Supabase에서 JSONB를 object로 반환하는데, 클라이언트로 전달 시 직렬화.
+
+근본 원인: Next.js가 서버 컴포넌트 결과를 캐시.
+DB 스키마 변경 전 결과를 계속 반환하고 있었음.
+
+해결:
+1. getInterview()에서 autobiography_draft 명시적 선택
+2. archive/[id]/page.tsx에 `export const dynamic = 'force-dynamic'` 추가
+3. rowToInterview()에서 string → object 파싱 (방어 코드)
+
+**학습**
+
+- Next.js 13+ 서버 컴포넌트는 기본적으로 캐시함
+- DB 스키마 변경 후 `revalidate = 0` 또는 `dynamic = 'force-dynamic'` 필요
+- Supabase JS client는 JSONB를 자동 파싱하지만, `select('*')`가 특정 컬럼을 누락할 수 있음
+
+**참고**
+
+- lib/store.ts rowToInterview() 파싱 로직
+- app/archive/[id]/page.tsx 캐시 설정
+- components/ArchiveView.tsx 초고 편집 UI
+- design/ 폴더 전체 동기화 (01-07 파일)
+
+---
+
 ## 2026-03-04 - 챕터 기반 인터뷰 아키텍처 설계
 
 **상황**

@@ -594,6 +594,61 @@ Interview (1 record = one life-story project)
 3. System prompt (lib/prompts.ts) will need locale-specific versions
 4. UI language and interview language may differ
 
+## Archive Draft Editing (신규, 3/5)
+
+**위치:** /archive/{id} 페이지, AI 요약 아래, 전체 대화 보기 위에
+
+**표시 조건:**
+- `interview.autobiographyDraft[chapterNum]`이 존재할 때만 섹션 노출
+- 챕터 완주 전에는 섹션 자체가 없음
+
+**기능:**
+- 읽기 모드: 초고 텍스트 표시 + "편집하기" 버튼
+- 편집 모드: textarea 편집 + "저장"/"취소" 버튼
+- 저장 시 `/api/update-draft` PATCH 호출
+
+**구현:**
+```tsx
+// ArchiveView.tsx
+const [isDraftEditing, setIsDraftEditing] = useState(false);
+const [draftText, setDraftText] = useState('');
+
+// Extract chapter 1 draft
+let chapter1Draft: string | undefined;
+if (autobiographyDraft) {
+  const drafts = typeof autobiographyDraft === 'string'
+    ? JSON.parse(autobiographyDraft)
+    : autobiographyDraft;
+  chapter1Draft = drafts['1'] || drafts[1];
+}
+```
+
+**포지셔닝:** "AI가 작성한 초안, 직접 다듬어 주세요"
+
+## Dashboard Admin Features (신규, 3/5)
+
+**액션 버튼 (조건부 표시):**
+
+1. **초고 생성 버튼**
+   - 조건: `status === 'session_end' && !autobiographyDraft`
+   - 액션: `/api/chapter-complete` POST
+   - 용도: 챕터 완주했으나 초고 미생성된 레거시 데이터 처리
+
+2. **컨텍스트 초기화 버튼**
+   - 조건: `!chapterContext`
+   - 액션: `/api/init-chapter-context` POST
+   - 용도: 챕터 구조 배포 전 생성된 인터뷰에 기본값 주입
+
+**실시간 데이터 연동:**
+```tsx
+// app/dashboard/page.tsx
+useEffect(() => {
+  fetch('/api/interviews')
+    .then(res => res.json())
+    .then(data => setInterviews(data));
+}, []);
+```
+
 ## Feature Layer Roadmap
 
 ### Layer 0: Done (2/17-2/25)
@@ -736,14 +791,14 @@ These define the product's essence. Never violate during feature additions or re
 18. 챕터 제안은 분석 결과가 아니라 공감으로 전달한다.
 19. 자녀는 대화를 열람할 수 있다. 끼어들기는 Phase 2부터.
 
-## Known Issues (2026-02-26)
+## Known Issues (2026-03-05)
 
 - **AI meta tag generation:** GPT-4o ignores prompt instructions to generate `<meta phase="..." topic="..."/>` tags. Parsing function exists but AI doesn't output tags. Workaround: separate API call for metadata generation (backlog).
-- ~~**Interview page re-entry:**~~ ✅ **FIXED (2/26)** - Previous messages now load with date divider. handleResume + PATCH endpoint implemented.
-- ~~**AI resume context:**~~ ✅ **FIXED (2/26)** - AI prompt enhanced with "중요" keyword + 3-step format (greeting → recall → next question).
+- ~~**Interview page re-entry:**~~ ✅ **FIXED (2/26)** - Previous messages now load with date divider.
+- ~~**AI resume context:**~~ ✅ **FIXED (2/26)** - AI prompt enhanced.
+- ~~**autobiography_draft not displaying:**~~ ✅ **FIXED (3/5)** - Next.js cache issue resolved with `dynamic = 'force-dynamic'`.
 - KakaoTalk share: SDK + domain registered. Needs end-to-end testing.
 - F-014: Recording timer size change (text-2xl) needs verification on deployed build.
-- ~~**Build errors (2/26):**~~ ✅ **FIXED (2/26)** - TossPaymentsWidgets type error, FeedbackPriority "short" → "P1".
 
 ## Confirmed Design Decisions (2026-03-04)
 

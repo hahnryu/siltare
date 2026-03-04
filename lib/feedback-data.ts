@@ -89,6 +89,19 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  { date: '3/5', items: [
+    'archive 페이지 초고 편집 기능 (읽기/편집 모드 전환)',
+    '/api/update-draft PATCH 엔드포인트 (챕터별 초고 저장)',
+    '대시보드 실시간 데이터 연동 (/api/interviews GET)',
+    '대시보드 관리 버튼 (초고 생성, 컨텍스트 초기화)',
+    '/api/init-chapter-context POST 엔드포인트',
+    'generateDraftPrompt 완전 재작성 (연대기 → 감정순 구조)',
+    'autobiography_draft 파싱 버그 수정 (Next.js 캐시 이슈)',
+    'archive/[id]/page.tsx: export const dynamic = "force-dynamic"',
+    'lib/store.ts: getInterview() autobiography_draft 명시적 선택',
+    'design/ 폴더 전체 동기화 (01-user-journey, 02-data-model, 03-interview-engine, 06-api, 07-decisions)',
+    'supabase/migrations/20260305_transcript_corrected.sql: transcript_corrected 컬럼 예약',
+  ]},
   { date: '2/26', items: [
     'F-028 대화 이어하기 완료: session_end 상태, Archive 이어하기 배너, Interview 재진입 로직',
     'DateDivider 컴포넌트 신규 (날짜 구분선)',
