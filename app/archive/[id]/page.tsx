@@ -4,6 +4,10 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ArchiveView } from '@/components/ArchiveView';
 
+// Force dynamic rendering (no cache)
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function ArchivePage({ params }: { params: { id: string } }) {
   const interview = await getInterview(params.id);
   const messages = interview ? await getMessages(params.id) : [];
