@@ -94,7 +94,7 @@ export default function InterviewPage() {
     return () => clearInterval(timer);
   }, [hasMessages]);
 
-  const sendMessage = useCallback(async (userText: string) => {
+  const sendMessage = useCallback(async (userText: string, audioChunkId?: string) => {
     if (streaming) return;
 
     // Capture messages before state update — these become clientMessages fallback
@@ -121,6 +121,7 @@ export default function InterviewPage() {
         body: JSON.stringify({
           interviewId: id,
           message: userText,
+          audioChunkId,
           interviewMeta: interviewMetaRef.current ?? undefined,
           clientMessages,
         }),
@@ -352,12 +353,16 @@ export default function InterviewPage() {
       setTimeout(() => setUntranscribedWarning(''), 3000);
     }
 
-    // Upload audio chunks (best-effort, parallel)
+    // Upload audio chunks and get uploaded IDs
     const audioChunksToUpload = sendableChunks.filter((c) => c.type === 'audio') as PendingChunk[];
+    let uploadedAudioChunkIds: string[] = [];
     if (audioChunksToUpload.length > 0) {
-      uploadAndSaveAudioChunks(audioChunksToUpload).catch((err) => {
-        console.error('Audio upload failed (best-effort):', err);
-      });
+      try {
+        uploadedAudioChunkIds = await uploadAndSaveAudioChunks(audioChunksToUpload);
+      } catch (err) {
+        console.error('Audio upload failed:', err);
+        // Continue even if audio upload fails (text will still be sent)
+      }
     }
 
     // Remove sent chunks
@@ -371,12 +376,16 @@ export default function InterviewPage() {
       return remaining;
     });
 
-    sendMessage(combined);
+    // Pass first uploaded audio chunk ID to message (if any)
+    const audioChunkId = uploadedAudioChunkIds.length > 0 ? uploadedAudioChunkIds[0] : undefined;
+    sendMessage(combined, audioChunkId);
   };
 
   // Upload audio chunks to Supabase Storage + save metadata to DB
-  const uploadAndSaveAudioChunks = async (chunks: PendingChunk[]) => {
+  // Returns array of successfully uploaded chunk IDs
+  const uploadAndSaveAudioChunks = async (chunks: PendingChunk[]): Promise<string[]> => {
     const currentMessageIndex = messagesRef.current.length;
+    const uploadedIds: string[] = [];
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
@@ -428,11 +437,16 @@ export default function InterviewPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(audioChunkData),
         });
+
+        // Success: add to uploaded IDs
+        uploadedIds.push(chunk.id);
       } catch (err) {
         console.error(`Failed to upload/save chunk ${chunk.id}:`, err);
         // Continue with other chunks (best-effort)
       }
     }
+
+    return uploadedIds;
   };
 
   const handleEnd = async () => {

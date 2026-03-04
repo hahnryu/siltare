@@ -11,7 +11,7 @@ const anthropic = new Anthropic({
 
 export async function POST(req: NextRequest) {
   try {
-    const { interviewId, message } = await req.json();
+    const { interviewId, message, audioChunkId } = await req.json();
 
     // Check API key
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -78,6 +78,7 @@ ${lastUserMsg ? `- 답변하신 것: "${lastUserMsg.content}"` : ''}
         role: 'user',
         content: message,
         timestamp: new Date().toISOString(),
+        audioChunkId: audioChunkId || undefined,
       };
       await createMessage(interviewId, userMsg, userSequence);
       anthropicMessages.push({ role: 'user' as const, content: message });
