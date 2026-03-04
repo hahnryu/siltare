@@ -48,7 +48,10 @@ export async function createInterview(interview: Interview): Promise<void> {
 export async function getInterview(id: string): Promise<Interview | null> {
   const { data, error } = await supabase
     .from('interviews')
-    .select('*')
+    .select(`
+      *,
+      autobiography_draft
+    `)
     .eq('id', id)
     .single();
   if (error || !data) return null;
