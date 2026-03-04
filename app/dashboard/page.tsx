@@ -72,14 +72,14 @@ const TOPIC_DATA = [
 ];
 
 const RECENT_INTERVIEWS = [
-  { date: '2026.02.18', relation: '어머니', region: '안동', duration: '32분', status: '완료', bookOrder: '₩79,000' },
-  { date: '2026.02.17', relation: '아버지', region: '서울', duration: '28분', status: '완료', bookOrder: null },
-  { date: '2026.02.17', relation: '할머니', region: '부산', duration: '45분', status: '완료', bookOrder: '₩199,000' },
-  { date: '2026.02.16', relation: '어머니', region: '제주', duration: '31분', status: '진행중', bookOrder: null },
-  { date: '2026.02.16', relation: '할아버지', region: '대전', duration: '38분', status: '완료', bookOrder: '₩79,000' },
-  { date: '2026.02.15', relation: '어머니', region: '광주', duration: '27분', status: '실패', bookOrder: null },
-  { date: '2026.02.15', relation: '아버지', region: '수원', duration: '41분', status: '완료', bookOrder: '₩199,000' },
-  { date: '2026.02.14', relation: '할머니', region: '인천', duration: '35분', status: '완료', bookOrder: '₩79,000' },
+  { date: '2026.02.18', name: '박순자', relation: '어머니', region: '안동', duration: '32분', status: '완료', chapterProgress: '1장 완주', bookOrder: '₩79,000' },
+  { date: '2026.02.17', name: '김철수', relation: '아버지', region: '서울', duration: '28분', status: '완료', chapterProgress: '1장 2회차 / turning', bookOrder: null },
+  { date: '2026.02.17', name: '이영희', relation: '할머니', region: '부산', duration: '45분', status: '완료', chapterProgress: '2장 1회차 / space', bookOrder: '₩199,000' },
+  { date: '2026.02.16', name: '최미자', relation: '어머니', region: '제주', duration: '31분', status: '진행중', chapterProgress: '1장 1회차 / people', bookOrder: null },
+  { date: '2026.02.16', name: '정태호', relation: '할아버지', region: '대전', duration: '38분', status: '완료', chapterProgress: '1장 3회차 / closing', bookOrder: '₩79,000' },
+  { date: '2026.02.15', name: '한미영', relation: '어머니', region: '광주', duration: '27분', status: '실패', chapterProgress: '-', bookOrder: null },
+  { date: '2026.02.15', name: '송병철', relation: '아버지', region: '수원', duration: '41분', status: '완료', chapterProgress: '1장 완주', bookOrder: '₩199,000' },
+  { date: '2026.02.14', name: '오혜숙', relation: '할머니', region: '인천', duration: '35분', status: '완료', chapterProgress: '1장 2회차 / people', bookOrder: '₩79,000' },
 ];
 
 const STATUS_BADGE: Record<string, string> = {
@@ -87,6 +87,12 @@ const STATUS_BADGE: Record<string, string> = {
   '진행중': 'bg-amber/10 text-amber border border-amber/30',
   '실패': 'bg-red-50 text-red-600 border border-red-200',
 };
+
+function formatChapterProgress(progress: string): { text: string; highlight: boolean } {
+  if (progress === '-') return { text: '-', highlight: false };
+  if (progress.includes('완주')) return { text: progress, highlight: true };
+  return { text: progress, highlight: false };
+}
 
 function ChartTooltip({ active, payload, label, unit }: { active?: boolean; payload?: Array<{ value: number }>; label?: string; unit?: string }) {
   if (active && payload && payload.length) {
@@ -225,30 +231,45 @@ export default function DashboardPage() {
                   <thead>
                     <tr className="border-b border-mist bg-mist-light">
                       <th className="text-left px-5 py-3 text-stone font-medium">날짜</th>
+                      <th className="text-left px-4 py-3 text-stone font-medium">이름</th>
                       <th className="text-left px-4 py-3 text-stone font-medium">관계</th>
-                      <th className="text-left px-4 py-3 text-stone font-medium">지역</th>
-                      <th className="text-left px-4 py-3 text-stone font-medium">소요시간</th>
+                      <th className="text-left px-4 py-3 text-stone font-medium hidden sm:table-cell">지역</th>
+                      <th className="text-left px-4 py-3 text-stone font-medium hidden md:table-cell">소요시간</th>
+                      <th className="text-left px-4 py-3 text-stone font-medium">챕터 진도</th>
                       <th className="text-left px-4 py-3 text-stone font-medium">상태</th>
-                      <th className="text-right px-4 py-3 text-stone font-medium">책주문</th>
+                      <th className="text-right px-4 py-3 text-stone font-medium hidden lg:table-cell">책주문</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-mist">
-                    {RECENT_INTERVIEWS.map((row, i) => (
-                      <tr key={i} className="hover:bg-mist-light transition-colors">
-                        <td className="px-5 py-3 text-stone">{row.date}</td>
-                        <td className="px-4 py-3 font-medium text-bark">{row.relation}</td>
-                        <td className="px-4 py-3 text-stone">{row.region}</td>
-                        <td className="px-4 py-3 text-stone">{row.duration}</td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[row.status] || ''}`}>
-                            {row.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium">
-                          {row.bookOrder ?? <span className="text-stone">-</span>}
-                        </td>
-                      </tr>
-                    ))}
+                    {RECENT_INTERVIEWS.map((row, i) => {
+                      const chapterProg = formatChapterProgress(row.chapterProgress);
+                      return (
+                        <tr key={i} className="hover:bg-mist-light transition-colors">
+                          <td className="px-5 py-3 text-stone">{row.date}</td>
+                          <td className="px-4 py-3 font-medium text-bark">{row.name}</td>
+                          <td className="px-4 py-3 text-stone">{row.relation}</td>
+                          <td className="px-4 py-3 text-stone hidden sm:table-cell">{row.region}</td>
+                          <td className="px-4 py-3 text-stone hidden md:table-cell">{row.duration}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
+                              chapterProg.highlight
+                                ? 'bg-green-50 text-green-700 border border-green-200'
+                                : 'text-stone'
+                            }`}>
+                              {chapterProg.text}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[row.status] || ''}`}>
+                              {row.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right font-medium hidden lg:table-cell">
+                            {row.bookOrder ?? <span className="text-stone">-</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

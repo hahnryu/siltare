@@ -567,6 +567,9 @@ export function generateChapterContextBlock(ctx: ChapterContext): string {
   const chapter = getChapter(ctx.chapterNum);
   const currentLayer = getLayer(chapter, ctx.currentLayer);
 
+  // 1챕터 1세션 특별 진행 순서
+  const isFirstChapterFirstSession = ctx.chapterNum === 1 && ctx.sessionNum === 1;
+
   return `
 ## 중요: 지금 진행 중인 챕터와 레이어
 
@@ -581,6 +584,23 @@ export function generateChapterContextBlock(ctx: ChapterContext): string {
 
 **이번 세션 목표 레이어**: ${ctx.targetLayers.map(id => getLayer(chapter, id).label).join(', ')}
 **이미 완료한 레이어**: ${ctx.completedLayers.map(id => getLayer(chapter, id).label).join(', ') || '없음'}
+
+${isFirstChapterFirstSession ? `
+## 중요: 1챕터 1세션 진행 순서
+
+STEP 1. 생애 개관 (오프닝)
+- 첫 질문: 태어나서 지금까지 큰 흐름으로 어떤 시절을 지나왔는지
+- 유저가 답하면 내부적으로 어느 시기에 말이 많아지는지, 어느 시기를 건너뛰는지 파악
+- 이 답변에 대해 깊이 파고들지 않는다. 한 번만 가볍게 확인하고 STEP 2로 넘어간다.
+
+STEP 2. space 레이어 진입
+- "그 중에서 가장 이른 기억부터 시작해볼게요."
+- "어린 시절 가장 먼저 떠오르는 장면이 있으세요? 어디에 계셨는지, 무엇이 보이는지 말씀해 주세요."
+- 여기서부터 기존 레이어 구조대로 깊이 파고든다.
+
+STEP 1은 생애 뼈대를 잡는 용도. 깊이 파고드는 곳이 아님.
+STEP 2부터가 실제 대화 시작.
+` : ''}
 
 **당신이 할 일**:
 1. 현재 레이어(${currentLayer.label})의 목적을 달성하는 질문을 우선 한다.
@@ -608,16 +628,16 @@ export function generateFirstMessage(
 
   // 1챕터 1세션 (최초 시작)
   if (chapterNum === 1 && sessionNum === 1) {
-    return `${name}님, 안녕하세요. 저는 이야기를 기록하는 실타래입니다.
+    return `안녕하세요. 실타래입니다.
 
-오늘부터 ${name}님의 이야기를 기록합니다. 말씀해주시는 이야기를 놓치지 않고 잘 정리해 드립니다.
+오늘부터 당신의 이야기를 함께 기록합니다.
+10분씩, 여러 번에 걸쳐 쌓아가는 방식이에요.
 
-총 10개의 챕터로, 한 권의 책을 함께 만들어갑니다. 오늘은 첫 번째 챕터, "${chapter.titleKo}"를 시작합니다.
+먼저 큰 흐름부터 여쭤볼게요.
+태어나서 지금까지, 어떤 시절들을 지나오셨나요?
+길게 안 하셔도 돼요. 어떤 굵직한 시간들이 있었는지만 말씀해 주세요.
 
-먼저 기본적인 것부터 여쭐게요. 어린 시절 가장 먼저 떠오르는 장면이 있으세요?
-어디에 계셨는지, 무엇이 보이는지 말씀해 주세요.
-
-<meta phase="orientation" topic="기본정보" subtopic="출생지" qtype="initial" intensity="mid" />`;
+<meta phase="orientation" topic="생애개관" subtopic="큰흐름" qtype="initial" intensity="low" />`;
   }
 
   // N챕터 1세션 (새 챕터 시작)
