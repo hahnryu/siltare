@@ -79,7 +79,6 @@ function AudioPlayer() {
 
   return (
     <div className="mt-8 flex flex-col items-center gap-3">
-      <p className="text-[13px] text-cream/50">류석무 편집자 육성 (2026.02.15 녹취)</p>
       <div className="inline-flex items-center gap-3 rounded-full bg-cream/5 px-5 py-3">
         <audio ref={audioRef} src="/yoo_seokmoon.ogg" preload="metadata" />
         <button
@@ -138,10 +137,10 @@ export default function InspirationPage() {
               Inspiration
             </p>
             <h1 className="mt-4 font-serif text-[38px] font-bold leading-tight text-bark sm:text-[48px]">
-              기록의 계보
+              기록의 뿌리
             </h1>
             <p className="mt-6 text-[17px] leading-[1.9] text-stone">
-              실타래는 갑자기 나타난 것이 아닙니다.
+              실타래는 갑자기 나타난 것이 아닙니다.<br />
               이름 없는 이들의 목소리를 기록하려는 시도는 오래전부터 있었습니다.
             </p>
           </div>
@@ -226,8 +225,7 @@ export default function InspirationPage() {
                 <footer className="mt-2 text-[14px] text-stone">— 뿌리깊은나무 창간사</footer>
               </blockquote>
               <p className="mt-5 text-[16px] leading-[1.9] text-stone">
-                1980년 신군부에 의해 폐간.<br />
-                그러나 편집진은 흩어지지 않았습니다.
+                1980년 신군부에 의해 폐간.
               </p>
             </div>
 
@@ -257,23 +255,6 @@ export default function InspirationPage() {
                 제목만 읽어도 한 사람의 생이 느껴집니다.<br />
                 이것이 구술의 힘입니다.
               </p>
-
-              {/* Book Cover Gallery */}
-              <div className="-mx-6 mt-8">
-                <div className="scrollbar-hide flex cursor-grab snap-x snap-mandatory flex-row gap-4 overflow-x-auto px-6 py-6 active:cursor-grabbing">
-                  {Array.from({ length: 20 }, (_, i) => {
-                    const num = String(i + 1).padStart(2, '0');
-                    return (
-                      <img
-                        key={num}
-                        src={`/minjung/${num}.jpg`}
-                        alt={`민중자서전 ${i + 1}권`}
-                        className="h-[200px] w-auto flex-none snap-start rounded object-contain shadow-sm"
-                      />
-                    );
-                  })}
-                </div>
-              </div>
             </div>
 
             {/* 2003 */}
@@ -327,7 +308,7 @@ export default function InspirationPage() {
                 &ldquo;문화는 한 시대의 꽃이 아니라 뿌리에요. 뿌리가 깊으면 꽃은 철 따라 계속 필 수 있어요. 하지만 꽃이 피어도 뿌리가 약하면 그건 한 철에 지나지 않아요. 바로 이런 지점이 우리가 &lsquo;뿌리깊은나무&rsquo;를 통해 담아 내고자 했던 본령이었어요.&rdquo;
               </p>
               <footer className="mt-4 text-[14px] text-cream/60">
-                — 류석무, 뿌리깊은나무 마지막 편집자
+                — 류석무, 뿌리깊은나무 전 편집자
               </footer>
             </blockquote>
             <AudioPlayer />
@@ -338,8 +319,8 @@ export default function InspirationPage() {
         <section className="bg-cream px-6 py-20 text-center">
           <div className="mx-auto max-w-[520px]">
             <p className="text-[17px] leading-[2.1] text-stone">
-              실타래는 뿌리깊은나무가 50년 전에 시작한 기록을<br />
-              디지털로 계승합니다.<br />
+              실타래는 뿌리깊은나무가 50년 전에 시작한 기록의<br />
+              정신을 이어받았습니다.<br />
               <br />
               다만 이번에는,<br />
               당신이 직접 그분께 링크를 보낼 수 있습니다.

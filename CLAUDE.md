@@ -572,7 +572,34 @@ These define the product's essence. Never violate during feature additions or re
 - F-014: Recording timer size change (text-2xl) needs verification on deployed build.
 - ~~**Build errors (2/26):**~~ ✅ **FIXED (2/26)** - TossPaymentsWidgets type error, FeedbackPriority "short" → "P1".
 
-## Hidden UI Elements (2026-02-28)
+## Hidden UI Elements
+
+### 2026-03-03: 저작권 정리 (뿌리깊은나무 재단 협의)
+
+뿌리깊은나무 재단과의 저작권 협의 후, 일부 콘텐츠를 숨김/삭제 처리했습니다.
+
+**삭제/숨김 요소:**
+- **민중자서전 책 표지 이미지** (`/public/minjung/`) - 01.jpg ~ 20.jpg, img817.jpg (총 21개)
+- **책 표지 갤러리** (`app/inspiration/page.tsx`) - 스크롤 이미지 갤러리 섹션
+- **오디오 플레이어 캡션** (`app/inspiration/page.tsx`) - "류석무 편집자 육성 (2026.02.15 녹취)"
+- **뿌리깊은나무 연구소 링크** (`components/Footer.tsx`) - rooted.center 링크
+
+**용어 변경:**
+- "기록의 계보" → "기록의 뿌리"
+- "디지털 계승" → "정신을 이어받은"
+- "뿌리깊은나무 마지막 편집자" → "뿌리깊은나무 전 편집자"
+- vision 페이지 credentials의 "계보" → "영감"
+
+**삭제된 문구:**
+- "그러나 편집진은 흩어지지 않았습니다." (`app/inspiration/page.tsx`)
+
+**백업 위치:**
+- `_archive/2026-03-03-copyright-cleanup/minjung/` - 이미지 파일 백업
+- `_archive/2026-03-03-copyright-cleanup/audio-player-caption.txt`
+- `_archive/2026-03-03-copyright-cleanup/book-cover-gallery.txt`
+- `_archive/2026-03-03-copyright-cleanup/README.md` - 복구 방법 안내
+
+### 2026-02-28: 외부 공개시 숨김 처리
 
 일부 UI 요소들은 외부 공개시 숨김 처리되었습니다. 복구가 필요할 경우 `_archive/2026-02-28-hidden-sections/` 폴더에서 코드를 찾을 수 있습니다.
 

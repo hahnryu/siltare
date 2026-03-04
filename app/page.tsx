@@ -257,7 +257,7 @@ export default function HomePage() {
             <p className="text-[15px] leading-[1.9] text-stone">
               1976년, 뿌리깊은나무는 이름 없는 이들의 육성을<br />
               토박이말로 기록한 민중 자서전 20권을 남겼습니다.<br />
-              실타래는 그 기록의 디지털 계승입니다.
+              실타래는 그 정신을 이어받았습니다.
             </p>
             <Link
               href="/inspiration"

@@ -28,15 +28,7 @@ export function Footer() {
 
           {/* Credits */}
           <p className="text-[12px] text-stone">
-            A NodeONE Product ·{' '}
-            <a
-              href="https://www.rooted.center"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-bark transition-colors"
-            >
-              뿌리깊은나무 연구소
-            </a>
+            A NodeONE Product
           </p>
           <p className="text-[12px] text-stone/70">© 2026 NodeONE Inc.</p>
           <p className="text-[11px] text-stone/50 leading-relaxed">

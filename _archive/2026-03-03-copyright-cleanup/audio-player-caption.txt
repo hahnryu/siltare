@@ -1,0 +1,10 @@
+# AudioPlayer Caption (Inspiration Page)
+
+## 숨긴 내용
+Line 82 in app/inspiration/page.tsx:
+```tsx
+<p className="text-[13px] text-cream/50">류석무 편집자 육성 (2026.02.15 녹취)</p>
+```
+
+## 복구 방법
+AudioPlayer 컴포넌트 내부, audio 태그 위에 다시 추가하세요.

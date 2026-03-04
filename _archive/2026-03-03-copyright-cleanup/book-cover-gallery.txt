@@ -1,0 +1,27 @@
+# Book Cover Gallery Section (Inspiration Page)
+
+## 삭제된 코드
+Lines 261-276 in app/inspiration/page.tsx:
+
+```tsx
+              {/* Book Cover Gallery */}
+              <div className="-mx-6 mt-8">
+                <div className="scrollbar-hide flex cursor-grab snap-x snap-mandatory flex-row gap-4 overflow-x-auto px-6 py-6 active:cursor-grabbing">
+                  {Array.from({ length: 20 }, (_, i) => {
+                    const num = String(i + 1).padStart(2, '0');
+                    return (
+                      <img
+                        key={num}
+                        src={`/minjung/${num}.jpg`}
+                        alt={`민중자서전 ${i + 1}권`}
+                        className="h-[200px] w-auto flex-none snap-start rounded object-contain shadow-sm"
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+```
+
+## 복구 방법
+1. /public/minjung/ 폴더를 _archive에서 복원
+2. 위 코드를 민중자서전 섹션 하단에 다시 추가
