@@ -139,11 +139,20 @@ export function ArchiveView({ interview, messages: messagesProp }: { interview: 
   const [linkCopied, setLinkCopied] = useState(false);
   const [audioChunksMap, setAudioChunksMap] = useState<Record<number, string>>({});
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
+  const [isDraftEditing, setIsDraftEditing] = useState(false);
+  const [draftText, setDraftText] = useState('');
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
   const hasKakao = !!process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
 
   // Extract interview fields and prepare messages BEFORE any useEffect
-  const { id, interviewee, requester, mode, summary, entities, createdAt } = interview;
+  const { id, interviewee, requester, mode, summary, entities, createdAt, autobiographyDraft } = interview;
   const messages = messagesProp || interview.messages || [];
+
+  // Extract chapter 1 draft
+  const chapter1Draft = autobiographyDraft && typeof autobiographyDraft === 'object'
+    ? (autobiographyDraft as Record<string, string>)['1']
+    : undefined;
 
   useFadeIn();
 
@@ -215,6 +224,36 @@ export function ArchiveView({ interview, messages: messagesProp }: { interview: 
       },
       buttonTitle: '이야기 보기',
     });
+  }
+
+  function handleEditDraft() {
+    setDraftText(chapter1Draft || '');
+    setIsDraftEditing(true);
+  }
+
+  function handleCancelEdit() {
+    setIsDraftEditing(false);
+    setDraftText('');
+  }
+
+  async function handleSaveDraft() {
+    setIsSavingDraft(true);
+    try {
+      const res = await fetch('/api/update-draft', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interviewId: id, chapterNum: 1, draft: draftText }),
+      });
+      if (!res.ok) throw new Error('Failed to save draft');
+      setIsDraftEditing(false);
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 2500);
+      router.refresh();
+    } catch (err) {
+      alert('초고 저장에 실패했습니다');
+    } finally {
+      setIsSavingDraft(false);
+    }
   }
 
   return (
@@ -372,6 +411,61 @@ export function ArchiveView({ interview, messages: messagesProp }: { interview: 
                 </p>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Chapter 1 Draft ── */}
+      {chapter1Draft && (
+        <section className="fade-up mx-auto mt-10 max-w-2xl px-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-serif text-[20px] font-bold text-bark">✦ 1장 초고</h2>
+            {!isDraftEditing && (
+              <button
+                onClick={handleEditDraft}
+                className="text-[13px] font-medium text-stone transition-colors hover:text-bark"
+              >
+                편집하기
+              </button>
+            )}
+          </div>
+          <div style={{ backgroundColor: '#F5EDE0' }} className="rounded-[12px] p-6 md:p-8">
+            <p className="mb-6 text-[14px] text-secondary">
+              AI가 대화를 바탕으로 작성한 초안입니다. 직접 다듬어 주세요.
+            </p>
+            {isDraftEditing ? (
+              <>
+                <textarea
+                  value={draftText}
+                  onChange={(e) => setDraftText(e.target.value)}
+                  className="w-full min-h-[400px] rounded-[6px] border border-mist bg-warm-white p-4 font-serif text-[15px] leading-[1.9] text-bark focus:border-amber focus:outline-none"
+                  style={{ whiteSpace: 'pre-wrap' }}
+                />
+                <div className="mt-4 flex gap-3">
+                  <button
+                    onClick={handleSaveDraft}
+                    disabled={isSavingDraft}
+                    className="h-[48px] flex-1 rounded-[6px] bg-amber text-[16px] font-bold text-white transition-colors hover:bg-amber-dark disabled:opacity-50"
+                  >
+                    {isSavingDraft ? '저장 중...' : '저장'}
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={isSavingDraft}
+                    className="h-[48px] flex-1 rounded-[6px] border border-mist bg-warm-white text-[16px] font-medium text-bark transition-colors hover:bg-mist-light disabled:opacity-50"
+                  >
+                    취소
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="font-serif text-[15px] leading-[1.9] text-bark" style={{ whiteSpace: 'pre-wrap' }}>
+                {chapter1Draft}
+              </div>
+            )}
+            {draftSaved && (
+              <p className="mt-4 text-[14px] text-green-700">저장됐습니다 ✓</p>
+            )}
           </div>
         </section>
       )}
