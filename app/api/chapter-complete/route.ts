@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getInterview, updateInterview, getMessages } from '@/lib/store';
 import { generateDraftPrompt, diagnosisPrompt, entityExtractionPrompt } from '@/lib/prompts';
+import type { EntityData } from '@/lib/types';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -74,9 +75,9 @@ export async function POST(req: NextRequest) {
     });
     const entityText = entityMessage.content[0].type === 'text' ? entityMessage.content[0].text : '';
 
-    let entities;
+    let entities: EntityData;
     try {
-      entities = JSON.parse(entityText);
+      entities = JSON.parse(entityText) as EntityData;
     } catch {
       entities = { persons: [], places: [], times: [], events: [] };
     }
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
       diagnosis?: unknown;
       chapterMap?: unknown;
       chapterContext?: unknown;
-      entities?: unknown;
+      entities?: EntityData;
     } = {};
 
     // autobiography_draft: 기존 객체에 chapterNum 키로 추가
