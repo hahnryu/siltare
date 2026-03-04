@@ -8,6 +8,57 @@
 
 ---
 
+## 2026-03-05 - 스택 확장 계획 (Deepgram, PostHog, Pinecone)
+
+**결정:** Cluely 스택 참고하여 실타래 확장 로드맵 수립.
+
+**즉시 도입 (어버이날 직후):**
+
+1. **PostHog (Product Analytics)**
+   - 유저 행동 분석, 퍼널 추적
+   - 어디서 이탈하는지 데이터 기반 개선
+   - 무료 플랜으로 시작
+
+2. **Deepgram A/B 테스트**
+   - Whisper vs Deepgram 한국어 품질 비교
+   - 노인 발화/사투리 정확도 검증
+   - 비용: $2.58 vs $3.60 (10시간 기준)
+   - 속도: 2-3배 빠름
+
+**Phase 2 도입 (6-7월):**
+
+3. **Deepgram 전환 (검증 완료 시)**
+   - 실시간 스트리밍 준비
+   - 화자 식별 내장
+   - 비용 절감
+
+4. **AssemblyAI (화자 식별)**
+   - 단톡방 기능 시 필요
+   - 화자별 버블 색상 구분
+   - 감정 분석 기능
+
+5. **Pinecone (Vector DB)**
+   - Human Voice Graph 구축 시작
+   - 유사 경험 매칭
+   - 챕터 추천 고도화
+
+**Phase 3 도입 (8-9월):**
+
+6. **Stripe (글로벌 결제)**
+   - 해외 시장 진출 시
+   - Toss는 한국 시장 유지
+
+7. **WorkOS (Enterprise SSO)**
+   - B2B (요양원, 종친회 등)
+
+**유지:**
+- Vercel (호스팅)
+- Supabase (Storage 필수)
+- Anthropic Claude (인터뷰 AI)
+- Toss Payments (한국 시장)
+
+---
+
 ## 2026-03-05 - 초고 포지셔닝
 
 **결정:** AI 초고는 완성품이 아닌 편집 가능한 초안.
