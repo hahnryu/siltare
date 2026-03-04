@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getInterview, updateInterview, getMessages } from '@/lib/store';
 import { generateDraftPrompt, diagnosisPrompt, entityExtractionPrompt } from '@/lib/prompts';
-import type { EntityData } from '@/lib/types';
+import type { EntityData, ChapterContext, CustomChapter, DiagnosisResult } from '@/lib/types';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
     const draft = draftMessage.content[0].type === 'text' ? draftMessage.content[0].text : '';
 
     // 2. 진단 생성 (1챕터만)
-    let diagnosis = null;
-    let suggestedChapters = null;
+    let diagnosis: DiagnosisResult | null = null;
+    let suggestedChapters: CustomChapter[] | null = null;
     if (chapterNum === 1) {
       const diagnosisMessage = await anthropic.messages.create({
         model: 'claude-sonnet-4-5-20250929',
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         diagnosisMessage.content[0].type === 'text' ? diagnosisMessage.content[0].text : '';
 
       try {
-        diagnosis = JSON.parse(diagnosisText);
+        diagnosis = JSON.parse(diagnosisText) as DiagnosisResult;
         suggestedChapters = diagnosis.suggestedChapters;
       } catch (err) {
         console.error('Failed to parse diagnosis JSON:', err);
@@ -85,9 +85,9 @@ export async function POST(req: NextRequest) {
     // 4. DB 업데이트
     const updates: {
       autobiographyDraft?: Record<number, string>;
-      diagnosis?: unknown;
-      chapterMap?: unknown;
-      chapterContext?: unknown;
+      diagnosis?: DiagnosisResult;
+      chapterMap?: CustomChapter[];
+      chapterContext?: ChapterContext;
       entities?: EntityData;
     } = {};
 
