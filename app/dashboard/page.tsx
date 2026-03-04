@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
+import type { Interview } from '@/lib/types';
 import {
   BarChart,
   Bar,
@@ -71,21 +72,13 @@ const TOPIC_DATA = [
   { topic: '인생의 전환점', percent: 52 },
 ];
 
-const RECENT_INTERVIEWS = [
-  { id: 'int001', date: '2026.02.18', name: '박순자', relation: '어머니', region: '안동', duration: '32분', status: '완료', chapterProgress: '1장 완주', bookOrder: '₩79,000', hasDraft: true, hasChapterContext: true },
-  { id: 'int002', date: '2026.02.17', name: '김철수', relation: '아버지', region: '서울', duration: '28분', status: '완료', chapterProgress: '1장 2회차 / turning', bookOrder: null, hasDraft: false, hasChapterContext: true },
-  { id: 'int003', date: '2026.02.17', name: '이영희', relation: '할머니', region: '부산', duration: '45분', status: '완료', chapterProgress: '2장 1회차 / space', bookOrder: '₩199,000', hasDraft: true, hasChapterContext: true },
-  { id: 'int004', date: '2026.02.16', name: '최미자', relation: '어머니', region: '제주', duration: '31분', status: '진행중', chapterProgress: '1장 1회차 / people', bookOrder: null, hasDraft: false, hasChapterContext: true },
-  { id: 'int005', date: '2026.02.16', name: '정태호', relation: '할아버지', region: '대전', duration: '38분', status: '완료', chapterProgress: '1장 3회차 / closing', bookOrder: '₩79,000', hasDraft: true, hasChapterContext: false },
-  { id: 'int006', date: '2026.02.15', name: '한미영', relation: '어머니', region: '광주', duration: '27분', status: '실패', chapterProgress: '-', bookOrder: null, hasDraft: false, hasChapterContext: false },
-  { id: 'int007', date: '2026.02.15', name: '송병철', relation: '아버지', region: '수원', duration: '41분', status: '완료', chapterProgress: '1장 완주', bookOrder: '₩199,000', hasDraft: true, hasChapterContext: true },
-  { id: 'int008', date: '2026.02.14', name: '오혜숙', relation: '할머니', region: '인천', duration: '35분', status: '완료', chapterProgress: '1장 2회차 / people', bookOrder: '₩79,000', hasDraft: false, hasChapterContext: true },
-];
-
 const STATUS_BADGE: Record<string, string> = {
-  '완료': 'bg-green-50 text-green-700 border border-green-200',
+  '대기중': 'bg-gray-50 text-gray-600 border border-gray-200',
   '진행중': 'bg-amber/10 text-amber border border-amber/30',
-  '실패': 'bg-red-50 text-red-600 border border-red-200',
+  '일시정지': 'bg-orange-50 text-orange-600 border border-orange-200',
+  '세션종료': 'bg-blue-50 text-blue-600 border border-blue-200',
+  '챕터완료': 'bg-purple-50 text-purple-600 border border-purple-200',
+  '완료': 'bg-green-50 text-green-700 border border-green-200',
 };
 
 function formatChapterProgress(progress: string): { text: string; highlight: boolean } {
@@ -142,10 +135,94 @@ function MetricCard({ label, value, change, changeLabel, sub }: {
   );
 }
 
+type InterviewRow = {
+  id: string;
+  date: string;
+  name: string;
+  relation: string;
+  region: string;
+  duration: string;
+  status: string;
+  chapterProgress: string;
+  bookOrder: string | null;
+  hasDraft: boolean;
+  hasChapterContext: boolean;
+};
+
+const STATUS_MAP: Record<string, string> = {
+  pending: '대기중',
+  active: '진행중',
+  paused: '일시정지',
+  session_end: '세션종료',
+  chapter_complete: '챕터완료',
+  complete: '완료',
+};
+
+function formatInterviewRow(interview: Interview): InterviewRow {
+  const date = new Date(interview.createdAt).toLocaleDateString('ko-KR').replace(/\. /g, '.').replace(/\.$/, '');
+  const name = interview.interviewee.name || '(이름없음)';
+  const relation = interview.requester?.relationship || '본인';
+  const region = '-'; // 데이터 없음
+  const duration = interview.totalDurationSec
+    ? `${Math.floor(interview.totalDurationSec / 60)}분`
+    : '-';
+
+  let chapterProgress = '-';
+  if (interview.chapterContext) {
+    const { chapterNum, sessionNum, currentLayer, chapterComplete } = interview.chapterContext;
+    if (chapterComplete) {
+      chapterProgress = `${chapterNum}장 완주`;
+    } else {
+      chapterProgress = `${chapterNum}장 ${sessionNum}회차 / ${currentLayer}`;
+    }
+  }
+
+  const status = STATUS_MAP[interview.status] || interview.status;
+  const bookOrder = interview.payment
+    ? `₩${interview.payment.amount.toLocaleString()}`
+    : null;
+  const hasDraft = !!(interview.autobiographyDraft && typeof interview.autobiographyDraft === 'object' && Object.keys(interview.autobiographyDraft).length > 0);
+  const hasChapterContext = !!interview.chapterContext;
+
+  return {
+    id: interview.id,
+    date,
+    name,
+    relation,
+    region,
+    duration,
+    status,
+    chapterProgress,
+    bookOrder,
+    hasDraft,
+    hasChapterContext,
+  };
+}
+
 export default function DashboardPage() {
   const [range, setRange] = useState<Range>('최근 7일');
   const [loadingDraft, setLoadingDraft] = useState<string | null>(null);
   const [loadingContext, setLoadingContext] = useState<string | null>(null);
+  const [interviews, setInterviews] = useState<InterviewRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInterviews = async () => {
+      try {
+        const res = await fetch('/api/interviews');
+        if (!res.ok) throw new Error('Failed to fetch interviews');
+        const data = await res.json();
+        const rows = data.interviews.map(formatInterviewRow);
+        setInterviews(rows);
+      } catch (err) {
+        console.error('Failed to fetch interviews:', err);
+        alert('인터뷰 목록을 불러오는데 실패했습니다');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInterviews();
+  }, []);
 
   const handleGenerateDraft = async (interviewId: string) => {
     setLoadingDraft(interviewId);
@@ -265,22 +342,31 @@ export default function DashboardPage() {
                 <h2 className="text-base font-bold text-bark">{LABELS.recentLabel}</h2>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-mist bg-mist-light">
-                      <th className="text-left px-5 py-3 text-stone font-medium">날짜</th>
-                      <th className="text-left px-4 py-3 text-stone font-medium">이름</th>
-                      <th className="text-left px-4 py-3 text-stone font-medium">관계</th>
-                      <th className="text-left px-4 py-3 text-stone font-medium hidden sm:table-cell">지역</th>
-                      <th className="text-left px-4 py-3 text-stone font-medium hidden md:table-cell">소요시간</th>
-                      <th className="text-left px-4 py-3 text-stone font-medium">챕터 진도</th>
-                      <th className="text-left px-4 py-3 text-stone font-medium">상태</th>
-                      <th className="text-right px-4 py-3 text-stone font-medium hidden lg:table-cell">책주문</th>
-                      <th className="text-center px-4 py-3 text-stone font-medium">액션</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-mist">
-                    {RECENT_INTERVIEWS.map((row, i) => {
+                {loading ? (
+                  <div className="px-5 py-12 text-center text-stone">
+                    <p>데이터를 불러오는 중...</p>
+                  </div>
+                ) : interviews.length === 0 ? (
+                  <div className="px-5 py-12 text-center text-stone">
+                    <p>인터뷰가 없습니다</p>
+                  </div>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-mist bg-mist-light">
+                        <th className="text-left px-5 py-3 text-stone font-medium">날짜</th>
+                        <th className="text-left px-4 py-3 text-stone font-medium">이름</th>
+                        <th className="text-left px-4 py-3 text-stone font-medium">관계</th>
+                        <th className="text-left px-4 py-3 text-stone font-medium hidden sm:table-cell">지역</th>
+                        <th className="text-left px-4 py-3 text-stone font-medium hidden md:table-cell">소요시간</th>
+                        <th className="text-left px-4 py-3 text-stone font-medium">챕터 진도</th>
+                        <th className="text-left px-4 py-3 text-stone font-medium">상태</th>
+                        <th className="text-right px-4 py-3 text-stone font-medium hidden lg:table-cell">책주문</th>
+                        <th className="text-center px-4 py-3 text-stone font-medium">액션</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-mist">
+                      {interviews.map((row, i) => {
                       const chapterProg = formatChapterProgress(row.chapterProgress);
                       return (
                         <tr key={i} className="hover:bg-mist-light transition-colors">
@@ -336,10 +422,11 @@ export default function DashboardPage() {
                             </div>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           </section>
