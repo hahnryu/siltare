@@ -1,7 +1,7 @@
 export interface Interview {
   id: string;
   mode: 'invite' | 'self';
-  status: 'pending' | 'active' | 'paused' | 'session_end' | 'complete';
+  status: 'pending' | 'active' | 'paused' | 'session_end' | 'chapter_complete' | 'complete';
   createdAt: string;
 
   requester?: {
@@ -35,6 +35,11 @@ export interface Interview {
   analysisDeep?: object;
   autobiographyDraft?: object;
 
+  // 챕터 컨텍스트 (NEW, 3/4)
+  chapterContext?: ChapterContext;
+  chapterMap?: CustomChapter[];
+  diagnosis?: DiagnosisResult;
+
   payment?: {
     paymentKey: string;
     orderId: string;
@@ -66,6 +71,7 @@ export interface Message {
   audioChunkId?: string;
   meta?: MessageMeta;
   sequence?: number;
+  source?: 'ai' | 'requester_hint';
 }
 
 export interface EntityData {
@@ -94,4 +100,34 @@ export interface AudioChunk {
   speakerLabel: string;
   isVerified: boolean;
   createdAt: string;
+}
+
+// ─────────────────────────────────────────────
+// Chapter Architecture Types (NEW, 3/4)
+// ─────────────────────────────────────────────
+
+export interface ChapterContext {
+  chapterNum: number;                          // 현재 챕터 번호 (1~10)
+  sessionNum: number;                          // 챕터 내 세션 번호 (1~5)
+  currentLayer: 'space' | 'people' | 'turning' | 'closing';
+  completedLayers: Array<'space' | 'people' | 'turning' | 'closing'>;
+  targetLayers: Array<'space' | 'people' | 'turning' | 'closing'>; // 이번 세션 목표
+  chapterComplete: boolean;
+}
+
+export interface CustomChapter {
+  num: number;
+  titleKo: string;
+  subtitleKo: string;
+  theme: string;
+  reason: string; // AI가 이 챕터를 제안한 이유 (유저에게 보여줌)
+}
+
+export interface DiagnosisResult {
+  dominantThemes: string[];           // 상위 3개 인생 무게중심
+  keyWords: string[];                 // 가장 많이 쓴 단어 3개
+  peakEmotionMoment: string;         // 감정이 가장 고조된 순간 요약
+  avoidedTopics: string[];           // 회피한 주제
+  coreNarrative: string;             // 이 사람을 관통하는 핵심 한 줄
+  suggestedChapters: CustomChapter[]; // 개인화된 2~9챕터 제안
 }

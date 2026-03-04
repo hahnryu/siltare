@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInterview, updateInterview, getMessages } from '@/lib/store';
 import { entityExtractionPrompt, summaryPrompt } from '@/lib/prompts';
+import { getTargetLayersForSession } from '@/lib/chapter-structure';
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,15 +42,58 @@ export async function POST(req: NextRequest) {
       const summaryData = await summaryRes.json();
       const summary = summaryData.choices?.[0]?.message?.content || '';
 
+      // 챕터 완주 판단 로직
+      let isChapterComplete = false;
+      let updatedChapterContext = interview.chapterContext;
+
+      if (interview.chapterContext) {
+        const { currentLayer, completedLayers } = interview.chapterContext;
+
+        // 챕터 완주 조건: currentLayer === 'closing' && completedLayers에 space, people, turning 모두 포함
+        const requiredLayers: Array<'space' | 'people' | 'turning'> = ['space', 'people', 'turning'];
+        const hasAllLayers = requiredLayers.every((layer) => completedLayers.includes(layer));
+
+        if (currentLayer === 'closing' && hasAllLayers) {
+          // 챕터 완주
+          isChapterComplete = true;
+          updatedChapterContext = {
+            ...interview.chapterContext,
+            chapterComplete: true,
+          };
+
+          await updateInterview(interviewId, {
+            status: 'chapter_complete',
+            transcript,
+            summary,
+            sessionCount: (interview.sessionCount || 0) + 1,
+            lastSessionAt: new Date().toISOString(),
+            chapterContext: updatedChapterContext,
+          });
+
+          return NextResponse.json({ transcript, summary, chapterComplete: true });
+        } else {
+          // 세션 종료 (챕터 진행 중)
+          const nextSessionNum = interview.chapterContext.sessionNum + 1;
+          const nextTargetLayers = getTargetLayersForSession(nextSessionNum);
+
+          updatedChapterContext = {
+            ...interview.chapterContext,
+            sessionNum: nextSessionNum,
+            targetLayers: nextTargetLayers,
+          };
+        }
+      }
+
       await updateInterview(interviewId, {
         status: 'session_end',
         transcript,
         summary,
         sessionCount: (interview.sessionCount || 0) + 1,
         lastSessionAt: new Date().toISOString(),
+        chapterContext: updatedChapterContext,
       });
 
-      return NextResponse.json({ transcript, summary });
+      return NextResponse.json({ transcript, summary, chapterComplete: isChapterComplete });
     }
 
     // Complete: 요약 + 개체 추출

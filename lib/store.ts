@@ -73,6 +73,9 @@ export async function updateInterview(id: string, updates: Partial<Interview>): 
   if ('analysisProfile' in updates) dbUpdates.analysis_profile = updates.analysisProfile;
   if ('analysisDeep' in updates) dbUpdates.analysis_deep = updates.analysisDeep;
   if ('autobiographyDraft' in updates) dbUpdates.autobiography_draft = updates.autobiographyDraft;
+  if ('chapterContext' in updates) dbUpdates.chapter_context = updates.chapterContext;
+  if ('chapterMap' in updates) dbUpdates.chapter_map = updates.chapterMap;
+  if ('diagnosis' in updates) dbUpdates.diagnosis = updates.diagnosis;
 
   const { error } = await supabase
     .from('interviews')
@@ -111,6 +114,9 @@ function rowToInterview(row: any): Interview {
     analysisProfile: row.analysis_profile,
     analysisDeep: row.analysis_deep,
     autobiographyDraft: row.autobiography_draft,
+    chapterContext: row.chapter_context,
+    chapterMap: row.chapter_map,
+    diagnosis: row.diagnosis,
     createdAt: row.created_at,
   };
 }

@@ -1,8 +1,13 @@
 // TODO: add auth check here
 import { NextRequest } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
 import { getInterview, updateInterview, getMessages, createMessage } from '@/lib/store';
-import { generateSystemPrompt } from '@/lib/prompts';
+import { generateSystemPrompt, generateChapterContextBlock } from '@/lib/prompts';
 import { Message, MessageMeta } from '@/lib/types';
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,10 +26,15 @@ export async function POST(req: NextRequest) {
     // Load existing messages from messages table
     const existingMessages = await getMessages(interviewId);
 
-    // Build system prompt and OpenAI messages
-    const systemPrompt = generateSystemPrompt(interview);
-    const openaiMessages: { role: 'system' | 'assistant' | 'user'; content: string }[] = [
-      { role: 'system' as const, content: systemPrompt },
+    // Build system prompt with ChapterContext (if available)
+    let systemPrompt = generateSystemPrompt(interview);
+    if (interview.chapterContext) {
+      const chapterBlock = generateChapterContextBlock(interview.chapterContext);
+      systemPrompt = chapterBlock + '\n\n' + systemPrompt;
+    }
+
+    // Build Anthropic messages (system is separate, not in messages array)
+    const anthropicMessages: { role: 'assistant' | 'user'; content: string }[] = [
       ...existingMessages.map((m) => ({
         role: m.role as 'assistant' | 'user',
         content: m.content,
@@ -51,10 +61,7 @@ ${lastUserMsg ? `- 답변하신 것: "${lastUserMsg.content}"` : ''}
 이제 자연스럽게 인사하며 다음 질문을 해주세요.`
         : `사용자가 이전 대화를 이어가기 위해 돌아왔습니다. "돌아오셨군요" 같은 짧은 인사 후 자연스럽게 다음 질문으로 이어주세요.`;
 
-      openaiMessages.push({
-        role: 'system' as const,
-        content: resumeContext,
-      });
+      systemPrompt = systemPrompt + '\n\n' + resumeContext;
     }
 
     // Add user message if provided
@@ -67,74 +74,83 @@ ${lastUserMsg ? `- 답변하신 것: "${lastUserMsg.content}"` : ''}
         timestamp: new Date().toISOString(),
       };
       await createMessage(interviewId, userMsg, userSequence);
-      openaiMessages.push({ role: 'user' as const, content: message });
+      anthropicMessages.push({ role: 'user' as const, content: message });
     }
 
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: openaiMessages,
-        stream: true,
-        temperature: 0.7,
-        max_tokens: 300,
-      }),
-    });
+    // ============================================================
+    // PREVIOUS: OpenAI GPT-4o streaming (commented out 2026-03-04)
+    // ============================================================
+    // const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    //   },
+    //   body: JSON.stringify({
+    //     model: 'gpt-4o',
+    //     messages: openaiMessages,
+    //     stream: true,
+    //     temperature: 0.7,
+    //     max_tokens: 300,
+    //   }),
+    // });
 
-    if (!openaiRes.ok || !openaiRes.body) {
-      return new Response('AI 응답 실패', { status: 500 });
-    }
-
-    const reader = openaiRes.body.getReader();
-    const decoder = new TextDecoder();
+    // ============================================================
+    // CURRENT: Anthropic Claude Sonnet 4.5 streaming
+    // ============================================================
     let fullContent = '';
 
     const stream = new ReadableStream({
       async start(controller) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        try {
+          const messageStream = await anthropic.messages.stream({
+            model: 'claude-sonnet-4-5-20250929',
+            max_tokens: 300,
+            system: systemPrompt,
+            messages: anthropicMessages,
+          });
 
-          const chunk = decoder.decode(value);
-          controller.enqueue(new TextEncoder().encode(chunk));
+          for await (const event of messageStream) {
+            // Anthropic event types: message_start, content_block_start, content_block_delta, content_block_stop, message_stop
+            if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+              const textDelta = event.delta.text;
+              fullContent += textDelta;
 
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-              try {
-                const parsed = JSON.parse(line.slice(6));
-                const delta = parsed.choices?.[0]?.delta?.content;
-                if (delta) fullContent += delta;
-              } catch {
-                // skip malformed SSE chunks
-              }
+              // Convert to OpenAI format for client compatibility
+              const openaiChunk = `data: ${JSON.stringify({
+                choices: [{ delta: { content: textDelta } }],
+              })}\n\n`;
+
+              controller.enqueue(new TextEncoder().encode(openaiChunk));
             }
           }
-        }
 
-        // Save assistant message (best-effort, don't fail the stream)
-        if (fullContent) {
-          const { cleanContent, meta } = parseMetaTag(fullContent);
+          // Send [DONE] marker (OpenAI format)
+          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
 
-          // Get updated message count for sequence
-          const updatedMessages = await getMessages(interviewId);
-          const assistantSequence = updatedMessages.length + 1;
+          // Save assistant message (best-effort, don't fail the stream)
+          if (fullContent) {
+            const { cleanContent, meta } = parseMetaTag(fullContent);
 
-          const assistantMsg: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: cleanContent,
-            timestamp: new Date().toISOString(),
-            meta, // meta is optional, may be undefined
-          };
+            // Get updated message count for sequence
+            const updatedMessages = await getMessages(interviewId);
+            const assistantSequence = updatedMessages.length + 1;
 
-          await createMessage(interviewId, assistantMsg, assistantSequence).catch((err) => {
-            console.error('Failed to save assistant message:', err);
-          });
+            const assistantMsg: Message = {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: cleanContent,
+              timestamp: new Date().toISOString(),
+              meta,
+            };
+
+            await createMessage(interviewId, assistantMsg, assistantSequence).catch((err) => {
+              console.error('Failed to save assistant message:', err);
+            });
+          }
+        } catch (err) {
+          console.error('Anthropic stream error:', err);
+          controller.error(err);
         }
 
         controller.close();

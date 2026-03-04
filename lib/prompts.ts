@@ -1,4 +1,6 @@
 import { Interview } from './types';
+import { getChapter, getLayer, DIAGNOSIS_CATEGORIES } from './chapter-structure';
+import type { ChapterContext, DiagnosisResult } from './types';
 
 export function generateSystemPrompt(interview: Interview): string {
   const { mode, requester, interviewee, context, context2 } = interview;
@@ -526,3 +528,191 @@ JSON 형식:
 export const summaryPrompt = `
 다음 대화 전사본을 3줄로 요약해주세요. 따뜻하고 존중하는 톤으로. 인터뷰이의 생애에서 가장 핵심적인 이야기를 담아주세요. em-dash(—)를 사용하지 마세요.
 `;
+
+// ─────────────────────────────────────────────
+// Chapter Architecture Support (NEW, 3/4)
+// ─────────────────────────────────────────────
+
+/**
+ * ChapterContext를 시스템 프롬프트에 주입할 텍스트 블록으로 변환
+ * AI가 현재 어느 챕터/레이어/세션인지 인식하고 목표를 따르도록
+ */
+export function generateChapterContextBlock(ctx: ChapterContext): string {
+  const chapter = getChapter(ctx.chapterNum);
+  const currentLayer = getLayer(chapter, ctx.currentLayer);
+
+  return `
+## 중요: 지금 진행 중인 챕터와 레이어
+
+**챕터 ${ctx.chapterNum}: ${chapter.titleKo}**
+- 부제: ${chapter.subtitleKo}
+- 테마: ${chapter.theme}
+
+**세션**: ${ctx.sessionNum}회차
+**현재 레이어**: ${currentLayer.label} (${currentLayer.id})
+- 목적: ${currentLayer.guidanceKo}
+- 완료 신호: ${currentLayer.completionSignal}
+
+**이번 세션 목표 레이어**: ${ctx.targetLayers.map(id => getLayer(chapter, id).label).join(', ')}
+**이미 완료한 레이어**: ${ctx.completedLayers.map(id => getLayer(chapter, id).label).join(', ') || '없음'}
+
+**당신이 할 일**:
+1. 현재 레이어(${currentLayer.label})의 목적을 달성하는 질문을 우선 한다.
+2. 레이어를 건너뛰지 않는다. 현재 레이어가 완료되기 전에 다음 레이어 질문을 하지 않는다.
+3. 이번 세션 목표 레이어를 모두 다루도록 한다.
+4. 완료 신호가 나타나면 자연스럽게 다음 레이어로 이동한다.
+
+**레이어별 질문 예시 (참고용, 자연스럽게 변형해서 사용)**:
+${currentLayer.triggerQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+`;
+}
+
+/**
+ * 첫 메시지 생성 (챕터 번호와 세션 번호에 따라 다름)
+ * 1챕터 1세션 = 오리엔테이션 + 뿌리 이야기 시작
+ * N챕터 1세션 = 새 챕터 시작 인사
+ * N챕터 N세션 = 이어가기
+ */
+export function generateFirstMessage(
+  name: string,
+  chapterNum: number,
+  sessionNum: number
+): string {
+  const chapter = getChapter(chapterNum);
+
+  // 1챕터 1세션 (최초 시작)
+  if (chapterNum === 1 && sessionNum === 1) {
+    return `${name}님, 안녕하세요. 저는 이야기를 기록하는 실타래입니다.
+
+오늘부터 ${name}님의 이야기를 기록합니다. 말씀해주시는 이야기를 놓치지 않고 잘 정리해 드립니다.
+
+총 10개의 챕터로, 한 권의 책을 함께 만들어갑니다. 오늘은 첫 번째 챕터, "${chapter.titleKo}"를 시작합니다.
+
+먼저 기본적인 것부터 여쭐게요. 태어나신 연도와 고향이 어디세요?
+
+<meta phase="orientation" topic="기본정보" subtopic="출생지" qtype="initial" intensity="mid" />`;
+  }
+
+  // N챕터 1세션 (새 챕터 시작)
+  if (sessionNum === 1) {
+    return `${name}님, 다시 뵙게 되어 반갑습니다.
+
+오늘은 ${chapterNum}번째 챕터 "${chapter.titleKo}"를 시작합니다. ${chapter.subtitleKo}에 대해 이야기를 나눠볼게요.
+
+준비되셨으면 편하게 시작해 보세요.
+
+<meta phase="orientation" topic="새챕터시작" subtopic="${chapter.titleKo}" qtype="initial" intensity="mid" />`;
+  }
+
+  // N챕터 N세션 (이어가기)
+  return `${name}님, 또 뵙게 되어 반갑습니다.
+
+지난번 "${chapter.titleKo}" 이야기를 이어가 볼게요. 지난번에 나눈 이야기를 잠깐 떠올려 보시고, 편하게 시작하시면 됩니다.
+
+<meta phase="orientation" topic="세션이어가기" subtopic="${chapter.titleKo}" qtype="initial" intensity="mid" />`;
+}
+
+/**
+ * 챕터 완주 후 초고 생성 프롬프트
+ * GPT-4o 또는 Claude에게 전체 transcript를 주고 초고를 생성하도록
+ */
+export function generateDraftPrompt(
+  transcript: string,
+  chapterNum: number,
+  intervieweeName: string
+): string {
+  const chapter = getChapter(chapterNum);
+
+  return `
+당신은 전문 자서전 작가입니다. 아래는 ${intervieweeName}님과의 대화 전사본입니다.
+
+이 대화를 바탕으로 "${chapter.titleKo}: ${chapter.subtitleKo}" 챕터의 초고를 작성해주세요.
+
+**작성 원칙**:
+1. 1인칭 시점으로 쓴다. "${intervieweeName}는..."이 아니라 "나는..."
+2. 대화 느낌을 지운다. AI 질문을 포함하지 않는다.
+3. 구체적인 장면, 대화, 감각을 살린다.
+4. 시간 순서대로 정리한다.
+5. 3~5 문단, 총 800~1200자 분량.
+6. 마지막 문장은 성찰적 또는 감정적 여운을 남긴다.
+
+**톤**:
+- 문학적이되 과장하지 않는다.
+- 감정을 직접 말하지 않고 장면으로 보여준다.
+- em-dash(—)를 사용하지 않는다.
+
+**전사본**:
+${transcript}
+
+위 대화를 바탕으로 초고를 작성해주세요. 초고만 출력하고, 다른 설명은 붙이지 마세요.
+`.trim();
+}
+
+/**
+ * 1챕터 완주 후 진단 프롬프트
+ * GPT-4o 또는 Claude가 6개 카테고리 중 상위 3개를 감지하고
+ * 개인화된 2~9챕터를 제안하도록
+ */
+export const diagnosisPrompt = `
+당신은 생애사 연구자이자 심리 분석가입니다. 아래는 인터뷰이의 1챕터 "뿌리" 대화 전사본입니다.
+
+이 사람의 인생 무게중심을 분석하고, 개인화된 챕터 구성을 제안해주세요.
+
+**진단 카테고리** (6개 중 상위 3개를 선택):
+- family: 가족 중심
+- relationship: 관계 중심
+- achievement: 성취 중심
+- place: 장소/뿌리 중심
+- survival: 생존/위기 경험
+- belief: 신념/철학 중심
+
+**출력 형식** (JSON):
+{
+  "dominantThemes": ["상위 3개 카테고리"],
+  "keyWords": ["가장 많이 쓴 단어 3개"],
+  "peakEmotionMoment": "감정이 가장 고조된 순간 요약 (1문장)",
+  "avoidedTopics": ["회피한 주제들"],
+  "coreNarrative": "이 사람을 관통하는 핵심 한 줄",
+  "suggestedChapters": [
+    {
+      "num": 2,
+      "titleKo": "챕터 제목",
+      "subtitleKo": "부제",
+      "theme": "theme_keyword",
+      "reason": "이 챕터를 제안하는 이유 (공감 언어로, 2문장)"
+    },
+    ...8개 (num 2~9)
+  ]
+}
+
+**중요**:
+- suggestedChapters는 반드시 8개 (2~9번).
+- 1번(뿌리)과 10번(유산)은 고정이므로 제안하지 않음.
+- reason은 분석 언어 아닌 공감 언어. "느껴졌어요" 형식.
+  예: "가족 이야기를 할 때 목소리가 달라지는 게 느껴졌어요. 이 부분을 더 깊이 다뤄보면 좋겠습니다."
+- em-dash(—)를 사용하지 않는다.
+
+다른 설명 없이 JSON만 출력하세요.
+`.trim();
+
+/**
+ * 진단 결과를 유저 친화적 언어로 변환
+ * (화면에 보여줄 때 사용)
+ */
+export function formatInsightForUser(diagnosis: DiagnosisResult): {
+  headline: string;
+  themes: string[];
+  insight: string;
+  nextSteps: string;
+} {
+  const themeLabels = diagnosis.dominantThemes.map(
+    t => DIAGNOSIS_CATEGORIES[t as keyof typeof DIAGNOSIS_CATEGORIES]
+  );
+
+  return {
+    headline: `${diagnosis.keyWords.join(', ')}`,
+    themes: themeLabels,
+    insight: diagnosis.coreNarrative,
+    nextSteps: `다음 챕터부터는 ${diagnosis.dominantThemes[0]}를 중심으로 이야기가 깊어집니다.`,
+  };
+}

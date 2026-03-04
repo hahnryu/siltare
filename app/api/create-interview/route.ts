@@ -19,6 +19,14 @@ export async function POST(req: NextRequest) {
       context: body.context,
       context2: body.context2,
       messages: [],
+      chapterContext: {
+        chapterNum: 1,
+        sessionNum: 1,
+        currentLayer: 'space',
+        completedLayers: [],
+        targetLayers: ['space', 'people'],
+        chapterComplete: false,
+      },
     };
 
     await createInterview(interview);

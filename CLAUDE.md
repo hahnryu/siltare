@@ -1,7 +1,7 @@
 # CLAUDE.md - Siltare (실타래)
 
-> Last updated: 2026-02-28
-> Version: 0.4.2 (Hidden UI elements + JOURNAL.md guide)
+> Last updated: 2026-03-04
+> Version: 0.5.0 (Chapter-based Interview Architecture)
 
 ## Glossary
 
@@ -10,6 +10,13 @@
 - **i18n** (Internationalization): Multi-language support structure.
 - **KST** (Korea Standard Time): UTC+9.
 - **RLS** (Row Level Security): Supabase access control. Currently bypassed with service role key.
+- **Chapter (챕터)**: 실타래 자서전의 기본 단위. 10챕터 = 책 한 권.
+- **Session (세션)**: 챕터 안의 대화 단위. 1챕터 = 3~5세션 = 약 30~50분.
+- **Layer (레이어)**: 세션 안의 단계. space → people → turning → closing.
+- **Layer Tracker**: AI가 현재 레이어 상태를 추적하는 시스템. 감독 AI 없이 프롬프트로 구현.
+- **Diagnosis (진단)**: 1챕터 완주 후 AI가 생성하는 인생 무게중심 분석.
+- **Draft (초고)**: 챕터 완주 후 AI가 생성하는 자서전 초고 텍스트.
+- **ChapterContext**: 현재 챕터/세션/레이어 상태를 담은 객체. 시스템 프롬프트에 주입됨.
 
 ## Priority Legend
 
@@ -33,6 +40,68 @@ URL: siltare.vercel.app (current) / siltare.app (planned)
 4. Voice input supported (MediaRecorder -> Whisper API)
 5. After completion: transcript + AI summary + entities at /archive/[id]
 
+## Chapter Architecture (핵심 설계)
+
+### 전체 구조
+
+```
+책 한 권 = 10챕터
+1챕터 = 3~5세션 (약 10분/세션)
+총 10시간 대화 = 책 한 권
+```
+
+### 10챕터 기본 구성
+
+| 챕터 | 제목 | 부제 | 고정 여부 |
+|------|------|------|-----------|
+| 1 | 뿌리 | 가장 이른 기억 | 고정 (진단 세션) |
+| 2~9 | 개인화 | AI가 1챕터 후 제안 | 유동 |
+| 10 | 남기고 싶은 것 | 후회, 감사, 다음 세대에게 | 고정 |
+
+### 레이어 구조 (모든 챕터 공통)
+
+```
+Layer 1: space (공간과 배경)
+  - 이 시절을 살았던 공간으로 기억을 소환
+  - "그 시절 살던 곳을 눈앞에 그려보시면 어떤 모습이에요?"
+
+Layer 2: people (사람과 관계)
+  - 그 시절 곁에 있던 사람들을 통해 감정 끌어내기
+  - "그 시절 가장 자주 보던 얼굴이 누구예요?"
+
+Layer 3: turning (전환점)
+  - 이 시절의 클라이맥스. 결정적 순간.
+  - "이 시절이 끝났다고 느낀 순간이 언제예요?"
+
+Layer 4: closing (마무리)
+  - 이 시절의 자신에게 건네는 말. 초고의 마지막 문장.
+  - "그 시절의 당신에게 지금 한마디 한다면요?"
+```
+
+### 세션별 목표 레이어
+
+```
+세션 1: space + people (워밍업)
+세션 2: turning
+세션 3: closing → 챕터 완주 → 초고 생성
+```
+
+### 1챕터의 특별한 역할 (진단 세션)
+
+1챕터는 뿌리 이야기를 하면서 동시에 진단을 수행합니다.
+
+**진단 항목:**
+- dominantThemes: 인생 무게중심 상위 3개 (family/relationship/achievement/place/survival/belief)
+- keyWords: 가장 많이 쓴 단어 3개
+- peakEmotionMoment: 감정이 가장 고조된 순간
+- avoidedTopics: 회피한 주제
+- coreNarrative: 이 사람을 관통하는 핵심 한 줄
+
+**1챕터 완주 후 생성되는 것:**
+1. 뿌리 챕터 초고 (800~1500자)
+2. 자기발견 인사이트 (진단 결과 유저 표시용)
+3. 개인화된 2~9챕터 구성 제안
+
 ## Two Modes
 
 - **invite**: Someone wants to hear another person's story (child->parent, student->mentor)
@@ -43,7 +112,11 @@ URL: siltare.vercel.app (current) / siltare.app (planned)
 - Next.js 14 (App Router)
 - TypeScript
 - Tailwind CSS
-- OpenAI API (GPT-4o: conversation/summary, Whisper: speech-to-text)
+- OpenAI API (Whisper: speech-to-text)
+- AI Models:
+  - **Interview AI**: Claude Sonnet 4.5 (전환 예정, 현재 GPT-4o)
+  - **STT**: OpenAI Whisper
+  - **이유**: 레이어 tracker 준수율, 긴 대화 맥락 유지, 한국어 공감 품질
 - Supabase (PostgreSQL: data storage)
 - Kakao JavaScript SDK (sharing)
 - Vercel (deployment)
@@ -81,6 +154,11 @@ CREATE TABLE interviews (
   analysis_profile      jsonb,  -- 성격 프로파일 (3~5회차)
   analysis_deep         jsonb,  -- 깊은 심리 분석 (10시간+)
   autobiography_draft   jsonb,  -- 자서전 초안
+
+  -- Chapter-based architecture (NEW, 3/4)
+  chapter_context       jsonb,  -- ChapterContext
+  chapter_map           jsonb,  -- CustomChapter[]
+  diagnosis             jsonb,  -- DiagnosisResult (1챕터 완주 후)
 
   created_at   timestamptz DEFAULT now(),
   updated_at   timestamptz
@@ -267,9 +345,10 @@ siltare/
 │   │  -- API --
 │   └── api/
 │       ├── create-interview/route.ts
-│       ├── chat/route.ts            # GPT-4o SSE streaming
+│       ├── chat/route.ts            # AI SSE streaming (Claude Sonnet 전환 예정)
 │       ├── transcribe/route.ts      # Whisper speech-to-text
 │       ├── complete/route.ts        # Completion (summary + entity extraction + session_end)
+│       ├── chapter-complete/route.ts # 챕터 완주 처리 (초고 + 진단 + 챕터 제안)
 │       ├── messages/route.ts        # GET messages from messages table (NEW, 2/25)
 │       ├── upload-audio/route.ts    # Audio upload to Supabase Storage
 │       ├── save-audio-chunk/route.ts # audio_chunks table insert
@@ -303,6 +382,7 @@ siltare/
 │   ├── store.ts                     # Supabase-based CRUD (was JSON files)
 │   ├── prompts.ts                   # System prompt (CORE. Modify with EXTREME care)
 │   ├── types.ts                     # Interview, Message, EntityData
+│   ├── chapter-structure.ts         # 10챕터 정의, 레이어 구조, 진단 카테고리, 유틸 함수
 │   ├── questions.ts                 # Recommended questions by relationship
 │   ├── feedback-data.ts            # Feedback items + changelog (for /dashboard/log)
 │   ├── i18n.ts                     # [FUTURE] Internationalization
@@ -323,7 +403,7 @@ Below shows future expansion direction. MUST NOT write code that blocks these ex
 ### Current (Supabase)
 ```
 interviews table (1 row = 1 interview project)
-├── id, mode, status (pending/active/paused/session_end/complete)
+├── id, mode, status (pending/active/paused/session_end/chapter_complete/complete)
 ├── requester (jsonb: name, email, relationship)
 ├── interviewee (jsonb: name, ageGroup)
 ├── context (jsonb), context2
@@ -331,13 +411,47 @@ interviews table (1 row = 1 interview project)
 ├── transcript, summary, entities (jsonb)
 ├── session_count, total_duration_sec, last_session_at
 ├── analysis_impression, analysis_profile, analysis_deep, autobiography_draft
+├── chapter_context (jsonb: ChapterContext)      -- NEW 3/4
+├── chapter_map (jsonb: CustomChapter[])         -- NEW 3/4
+├── diagnosis (jsonb: DiagnosisResult)           -- NEW 3/4
 └── created_at, updated_at
 
 messages table (1 row = 1 message) [NEW, 2/25]
 ├── id, interview_id, role, content, sender_name
 ├── audio_url, audio_duration, audio_chunk_id
 ├── meta_phase, meta_topic, meta_subtopic, meta_qtype, meta_intensity
+├── source ('ai' | 'requester_hint', nullable)   -- NEW 3/4 (예약 필드)
 ├── sequence, created_at
+```
+
+### New Types (3/4)
+
+```typescript
+ChapterContext {
+  chapterNum: number               // 현재 챕터 (1~10)
+  sessionNum: number               // 챕터 내 세션 번호 (1~5)
+  currentLayer: 'space' | 'people' | 'turning' | 'closing'
+  completedLayers: Layer[]
+  targetLayers: Layer[]            // 이번 세션 목표
+  chapterComplete: boolean
+}
+
+CustomChapter {
+  num: number                      // 2~9
+  titleKo: string
+  subtitleKo: string
+  theme: string
+  reason: string                   // AI가 이 챕터를 제안한 이유 (유저에게 보여줌)
+}
+
+DiagnosisResult {
+  dominantThemes: string[]         // 인생 무게중심 상위 3개
+  keyWords: string[]               // 가장 많이 쓴 단어 3개
+  peakEmotionMoment: string
+  avoidedTopics: string[]
+  coreNarrative: string            // 이 사람을 관통하는 핵심 한 줄
+  suggestedChapters: CustomChapter[]
+}
 ```
 
 ### Audio Storage (NEW, 2/25)
@@ -346,13 +460,14 @@ Path: {interview_id}/{chunk_id}.{ext}
 Metadata: audio_chunks table (1 row = 1 recording, 1:1:1 mapping)
 Access: lib/store.ts createAudioChunk, getAudioChunks, updateAudioChunk
 
-### New API Endpoints (2/25)
+### New API Endpoints (2/25, 3/4)
 - POST /api/upload-audio: Supabase Storage upload
 - POST /api/save-audio-chunk: audio_chunks table insert
 - GET /api/audio/[chunkId]: Audio streaming proxy
 - GET /api/audio-chunks/[interviewId]: List audio chunks
 - POST /api/transcribe: Updated to verbose_json with segments
 - GET /api/messages?interviewId={id}: Load messages from messages table (NEW, 2/25)
+- POST /api/chapter-complete: 챕터 완주 처리. 초고 생성 + 진단(1챕터) + 챕터 제안 (NEW, 3/4)
 
 ### Future Expansion
 ```
@@ -430,6 +545,42 @@ Interview (1 record = one life-story project)
 - /api/transcribe keeps single audio blob interface
 - Add /api/transcribe-chunk as new endpoint for chunk mode
 
+## Interview AI Model
+
+**Current**: GPT-4o (OpenAI)
+**Target**: Claude Sonnet 4.5 (Anthropic)
+
+**전환 이유:**
+- 복잡한 레이어 tracker 지시 준수율이 높음
+- 긴 대화 맥락 유지가 강함
+- 한국어 뉘앙스, 공감 반응 품질
+- Claude Code 개발 환경과 일치 (프롬프트 테스트 사이클 빠름)
+
+**전환 작업:**
+- api/chat/route.ts의 OpenAI 호출 → Anthropic SDK
+- SSE 스트리밍 방식 유지 (클라이언트 코드 변경 없음)
+
+**STT**: OpenAI Whisper 유지 (한국어 인식률 최고 수준, 변경 이유 없음)
+
+## Onboarding Flow
+
+**첫 방문 유저:**
+```
+/self 페이지 → 온보딩 화면 (레이어 2) → 첫 메시지 (레이어 1) → 대화 시작
+```
+
+**재방문 유저:**
+```
+/self 페이지 → 바로 레이어 1 → 이전 대화 이어가기
+```
+
+**온보딩 화면 (레이어 2) 구성:**
+1. 왜 하는가 (3개 카드)
+2. 숫자 proposition (10시간/10분/AI 심리분석)
+3. 어떻게 진행되는가 (챕터 그리드 + 세션 진도 + 4단계 플로우)
+4. 오늘 할 것 (챕터/세션 명시)
+5. 시작 버튼
+
 ## Internationalization (i18n) Structure
 
 ### Current (MVP): Korean only
@@ -472,6 +623,20 @@ Interview (1 record = one life-story project)
 - F-010: Social login (Kakao + Google/Apple via NextAuth)
 - F-027: Kakao notification templates (progress alerts, reminders)
 - F-005: KakaoTalk share end-to-end testing
+- **F-047: Chapter Architecture 구현**
+  - lib/chapter-structure.ts 생성
+  - lib/types.ts ChapterContext/DiagnosisResult 추가
+  - lib/prompts.ts 챕터 컨텍스트 주입 함수 추가
+  - api/chat/route.ts ChapterContext 주입
+  - api/chapter-complete/route.ts 신규 생성
+  - Supabase schema 컬럼 추가
+- **F-048: Claude Sonnet 전환**
+  - api/chat/route.ts OpenAI → Anthropic SDK
+  - SSE 스트리밍 방식 유지
+- **F-049: 온보딩 화면 구현**
+  - /self 페이지 온보딩 (레이어 2)
+  - 첫 방문 / 재방문 분기
+  - 챕터 그리드 진도 표시
 
 ### Phase 2: Relationship Analysis (Jun-Jul)
 - F-037/023: Group chat (requester in chatroom, Message.role: requester)
@@ -482,6 +647,7 @@ Interview (1 record = one life-story project)
 - F-024: Collaborative transcript editing
 - F-025: Self mode completion
 - F-006: Interview list (header dropdown or /my, if needed)
+- Requester 힌트 키워드 전송 (Message.source: 'requester_hint')
 
 ### Phase 3: Subscription + Scale (Aug-Sep)
 - F-042: Family subscription (monthly 9,900 KRW, Toss recurring)
@@ -562,6 +728,13 @@ These define the product's essence. Never violate during feature additions or re
 10. Product essence: A tool that asks the questions you never could, while your parents are still alive.
 11. This is a ritualistic life-story chatroom, not a one-time tool. Users return to continue their story across multiple sessions.
 12. Revenue comes from analysis, not conversation. First conversation is always free. Paid features: audio preservation, personality analysis, relationship dynamics, autobiography book.
+13. 챕터는 10분 단위로 쌓인다. 한 번에 끝내려 하지 않는다.
+14. AI는 레이어를 지킨다. space → people → turning → closing 순서를 벗어나지 않는다.
+15. 1챕터는 진단 세션이다. 뿌리 이야기를 하면서 동시에 인생 무게중심을 감지한다.
+16. 초고는 AI가 쓰되, 목소리는 인터뷰이의 것이어야 한다.
+17. 챕터 2~9는 1챕터 완주 후 AI가 개인화 제안한다. 처음부터 고정하지 않는다.
+18. 챕터 제안은 분석 결과가 아니라 공감으로 전달한다.
+19. 자녀는 대화를 열람할 수 있다. 끼어들기는 Phase 2부터.
 
 ## Known Issues (2026-02-26)
 
@@ -571,6 +744,36 @@ These define the product's essence. Never violate during feature additions or re
 - KakaoTalk share: SDK + domain registered. Needs end-to-end testing.
 - F-014: Recording timer size change (text-2xl) needs verification on deployed build.
 - ~~**Build errors (2/26):**~~ ✅ **FIXED (2/26)** - TossPaymentsWidgets type error, FeedbackPriority "short" → "P1".
+
+## Confirmed Design Decisions (2026-03-04)
+
+### 챕터 완주 트리거
+유저는 "오늘은 여기까지" 버튼 하나만.
+서버(/api/complete)가 현재 레이어 상태를 보고 챕터 완주 vs 세션 종료를 판단.
+closing 레이어 완료 상태면 /api/chapter-complete 자동 트리거.
+
+### ChapterContext 생성 시점
+/api/create-interview 호출 시 기본값으로 생성.
+기본값: `{ chapterNum: 1, sessionNum: 1, currentLayer: 'space', completedLayers: [], targetLayers: ['space', 'people'], chapterComplete: false }`
+
+### invite 모드 챕터 구조
+챕터 구조는 백그라운드에서만. 부모님 화면에는 챕터 개념 노출 안 함.
+AI는 레이어를 지키며 진행. 자녀 대시보드 진도 표시는 Phase 2.
+
+### Message 타입 source 필드 (예약)
+`source?: 'ai' | 'requester_hint'` (현재 null 허용)
+- 레벨 1(현재): 미사용
+- 레벨 2(Phase 2): 자녀 힌트 키워드를 AI가 질문에 녹여냄
+- 레벨 3(Phase 3): 자녀 메시지 대화에 직접 표시
+
+### entities 추출
+챕터 완주 시 /api/chapter-complete에서 자유 텍스트로 추출.
+온톨로지 정규화(Human Voice Graph)는 Layer 3 별도 파이프라인.
+
+### 챕터 2~9 오픈 구조
+1챕터 완주 후 AI가 개인화 제안. 전문 구술사 방법론 근거.
+챕터 제안 reason 필드는 분석 언어 금지. 공감 언어로.
+예: "말씀하시는 내내 일에서 찾은 보람이 느껴졌어요."
 
 ## Hidden UI Elements
 
@@ -711,9 +914,21 @@ Input: {
 }
 Output: { transcript: string, summary: string, entities?: EntityData }
 ```
-Combines messages into transcript, GPT-4o generates summary.
+Combines messages into transcript, AI generates summary.
 - action='session_end': Updates status to session_end, increments session_count. Summary only.
+  - closing 레이어 완료 시 자동으로 /api/chapter-complete 트리거
 - action='complete': Updates status to complete, generates summary + entity extraction.
+
+### POST /api/chapter-complete
+```
+Input: { interviewId: string, chapterNum: number }
+Output: { draft: string, diagnosis?: DiagnosisResult, suggestedChapters?: CustomChapter[] }
+```
+챕터 완주 처리. 초고 생성 + 진단(1챕터만) + 챕터 제안(1챕터만).
+- Updates status to chapter_complete
+- Generates chapter draft (800~1500자, 1인칭, 감정순)
+- 1챕터인 경우: diagnosis + suggestedChapters 생성
+- entities 추출 및 업데이트
 
 ### POST /api/upload-audio
 ```
@@ -747,6 +962,36 @@ Input: ?interviewId={id}
 Output: Message[]
 ```
 Returns all messages for an interview from messages table. Falls back to interviews.messages JSONB if table is empty (backward compatibility).
+
+## lib/prompts.ts Functions
+
+### generateChapterContextBlock(ctx: ChapterContext): string
+시스템 프롬프트 상단에 주입하는 챕터 컨텍스트 블록.
+AI에게 현재 챕터/레이어 상태를 명시.
+**MUST**: generateSystemPrompt() 호출 전에 prepend.
+
+### generateFirstMessage(name, chapterNum, sessionNum): string
+새 첫 메시지. 오리엔테이션 포함. 기존 Phase 0 첫 메시지 대체.
+
+### generateDraftPrompt(transcript, chapterNum, intervieweeName): string
+챕터 완주 후 초고 생성용. /api/chapter-complete에서 사용.
+
+### diagnosisPrompt: string
+1챕터 완주 후 진단 JSON 생성용. /api/chapter-complete에서 사용.
+
+### formatInsightForUser(diagnosis): object
+DiagnosisResult → 유저 화면용 텍스트 변환.
+
+## lib/chapter-structure.ts Exports
+
+```typescript
+DEFAULT_CHAPTERS: ChapterDefinition[]  // 10챕터 기본 정의
+DIAGNOSIS_CATEGORIES                   // 진단 카테고리 6개
+getChapter(num): ChapterDefinition     // 챕터 번호로 챕터 가져오기
+getLayer(chapter, layerId): Layer      // 챕터에서 레이어 가져오기
+getNextLayer(chapter, layerId): Layer  // 다음 레이어 가져오기
+getTargetLayersForSession(sessionNum)  // 세션별 목표 레이어
+```
 
 ### POST /api/auth/dashboard
 ```
@@ -827,8 +1072,8 @@ Business design in FLOW-MAP.md.
 
 Completed (19): F-001~F-004, F-002b, F-007, F-009, F-011~F-013, F-015~F-019, F-022, F-026, F-028 (partial), F-040 (partial)
 In progress (3): F-005, F-014, F-025, F-028 (AI context), F-040 (Realtime)
-Phase 1 (11): F-010, F-027, F-029~F-036, F-046
-Phase 2 (10): F-006, F-023~F-024, F-037~F-041, F-047~F-049
+Phase 1 (14): F-010, F-027, F-029~F-036, F-046, F-047, F-048, F-049
+Phase 2 (10): F-006, F-023~F-024, F-037~F-041
 Phase 3 (4): F-042~F-045
 Hold (1): F-006
 Other (3): F-008, F-020, F-021

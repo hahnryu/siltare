@@ -5,6 +5,140 @@
 
 ---
 
+## 2026-03-04 - 챕터 기반 인터뷰 아키텍처 설계
+
+**상황**
+
+실타래가 PoC 상태에서 MVP로 가기 위한 핵심 구조 설계가 필요했다.
+
+기존 프롬프트는 단일 30분 세션으로 설계되어 있어, 재방문 유도와 자서전 완성이라는 장기 목표와 맞지 않았다.
+
+**시도 및 결정**
+
+1. MVP 재정의
+
+   - 기존: "인터뷰 완주 + 요약"
+
+   - 변경: "1챕터 완주 → 초고 생성 → 재방문 동기 부여"
+
+   - 이유: 유저가 돌아오게 만드는 것이 핵심. 완주보다 "계속하고 싶다"는 느낌이 먼저.
+
+2. 10챕터 = 한 권 구조 확정
+
+   - 10분 x 3~5회 = 1챕터
+
+   - 10챕터 = 총 약 10시간 = 책 한 권 (한국어 기준 12만~15만자)
+
+   - 챕터는 사람마다 다르게: 1장(뿌리)과 10장(유산)은 고정, 2~9장은 AI가 개인화
+
+3. 레이어 구조 설계
+
+   - 모든 챕터는 동일한 4개 레이어로 진행: space → people → turning → closing
+
+   - drifting 방지: 감독 AI 이중 구조 대신 시스템 프롬프트 레이어 tracker로 해결
+
+   - 세션별 목표 레이어 고정으로 드리프팅 구조적 차단
+
+4. 1챕터 = 진단 세션
+
+   - 뿌리 이야기를 하면서 동시에 인생 무게중심 6개 카테고리 감지
+
+   - 완주 후 생성: 초고 + 자기발견 인사이트 + 개인화 챕터 제안
+
+   - 이것이 실타래의 첫 번째 "나도 몰랐던 나" 경험
+
+5. 인터뷰 AI 전환 결정
+
+   - GPT-4o → Claude Sonnet 4.5
+
+   - 이유: 복잡한 레이어 tracker 프롬프트 준수율, 한국어 공감 반응 품질
+
+   - STT는 Whisper 유지
+
+6. 온보딩 화면 설계
+
+   - 첫 방문: 레이어 2(온보딩) → 레이어 1(첫 메시지)
+
+   - 재방문: 바로 레이어 1 (이전 대화 이어가기)
+
+   - 온보딩 핵심 proposition: 왜 하는가 / 10시간=책한권 / AI 심리분석
+
+**결과**
+
+- lib/chapter-structure.ts 설계 완료
+
+- lib/types.ts 추가 타입 설계 완료 (ChapterContext, DiagnosisResult, CustomChapter)
+
+- lib/prompts.ts 추가 함수 설계 완료
+
+- 온보딩 화면 HTML 프로토타입 완성
+
+- CLAUDE.md 업데이트 내용 작성 완료
+
+**다음 스텝**
+
+1. Supabase schema 컬럼 추가 (chapter_context, chapter_map, diagnosis)
+
+2. lib/chapter-structure.ts 실제 파일 생성
+
+3. lib/types.ts 인터페이스 추가
+
+4. lib/prompts.ts 함수 추가
+
+5. api/chat/route.ts Claude Sonnet 전환 + ChapterContext 주입
+
+6. api/chapter-complete/route.ts 신규 생성
+
+7. /self 페이지 온보딩 구현
+
+**참고**
+
+- 설계 파일: outputs/chapter-structure.ts, outputs/types-addition.ts, outputs/prompts-addition.ts
+
+- 온보딩 프로토타입: outputs/siltare-onboarding.html
+
+- CLAUDE.md 업데이트: outputs/CLAUDE-UPDATE.md
+
+---
+
+## 2026-03-04 후반 - 설계 결정사항 확정
+
+**챕터 완주 트리거**
+
+버튼 하나(오늘은 여기까지). 서버가 레이어 상태 보고 챕터 완주/세션 종료 판단.
+
+**ChapterContext 생성**
+
+/api/create-interview 시 기본값 생성. 세션/챕터 완주 시 업데이트.
+
+**invite 모드**
+
+B안 확정. 챕터는 백그라운드. 부모님 화면엔 그냥 대화.
+
+**자녀 참여 로드맵**
+
+Message.source 필드 예약. 레벨 1(읽기 전용) MVP, 레벨 2/3은 Phase 2/3.
+
+핵심 감정 포인트: "영도다리" 힌트로 부모님 기억이 열리는 순간.
+
+**HOMP 온톨로지**
+
+entities 자유 텍스트 추출 (챕터 완주 시). 정규화는 Layer 3.
+
+B안으로 가도 Human Voice Graph 로드맵 막히지 않음 확인.
+
+**챕터 2~9 오픈 구조 확정**
+
+전문 구술사 방법론 검토 완료. 1챕터 후 개인화 제안이 맞는 방향.
+
+reason 필드: 분석 언어 아닌 공감 언어. "느껴졌어요" 형식.
+
+**다음 스텝**
+
+Claude Code로 오늘 설계 전체 반영. DESIGN-PROMPTING-GUIDE.md 순서대로.
+
+---
+
 ## 2026-03-03 - 저작권 정리 (뿌리깊은나무 재단 협의)
 
 **상황**:

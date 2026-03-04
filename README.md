@@ -33,8 +33,11 @@ npm install
 Create `.env.local`:
 
 ```bash
-# OpenAI API
+# OpenAI API (Whisper speech-to-text)
 OPENAI_API_KEY=sk-...
+
+# Anthropic API (Claude Sonnet 4.5 for interview AI)
+ANTHROPIC_API_KEY=sk-ant-...
 
 # Supabase (PostgreSQL + Storage)
 SUPABASE_URL=https://xxx.supabase.co
