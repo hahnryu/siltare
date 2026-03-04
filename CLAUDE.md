@@ -109,17 +109,25 @@ Layer 4: closing (마무리)
 
 ## Tech Stack
 
+**Current:**
 - Next.js 14 (App Router)
 - TypeScript
 - Tailwind CSS
-- OpenAI API (Whisper: speech-to-text)
 - AI Models:
-  - **Interview AI**: Claude Sonnet 4.5 (전환 예정, 현재 GPT-4o)
+  - **Interview AI**: Claude Sonnet 4.5
   - **STT**: OpenAI Whisper
   - **이유**: 레이어 tracker 준수율, 긴 대화 맥락 유지, 한국어 공감 품질
-- Supabase (PostgreSQL: data storage)
-- Kakao JavaScript SDK (sharing)
+- Supabase (PostgreSQL + Storage)
+- Toss Payments (payment)
+- Kakao JavaScript SDK (sharing, OAuth planned)
 - Vercel (deployment)
+
+**Planned Additions:**
+- **PostHog** (product analytics) - 어버이날 직후
+- **Deepgram** (Whisper replacement) - Phase 1 A/B test
+- **Pinecone** (vector DB for Human Voice Graph) - Phase 2
+- **AssemblyAI** (speaker diarization) - Phase 2 단톡방
+- **Stripe** (global payments) - Phase 3
 
 ## Data Storage: Supabase
 

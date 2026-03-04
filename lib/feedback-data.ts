@@ -81,6 +81,16 @@ export const FEEDBACK_ITEMS: FeedbackItem[] = [
   { id: "F-047", title: "archive 편집 모드", page: "/archive/{id}", status: "todo", priority: "P2", description: "읽기 전용 → 편집 가능. 챕터 재배치, 제목 수정, 구간 삭제/추가. 책 편집 인터페이스. F-024의 실체." },
   { id: "F-048", title: "가족 초대 (엄마도)", page: "/archive/{id}", status: "todo", priority: "P2", description: "archive에서 '엄마도 초대하기' → 새 /request 생성. 기존 가족 컨텍스트(이름, 관계) 자동 물려받기." },
   { id: "F-049", title: "이야기 완성도 판단", page: "/interview/{id}, /archive/{id}", status: "todo", priority: "P2", description: "AI가 세션 수, 총 시간, 주제 커버리지를 보고 '책으로 만들 수 있을 만큼 이야기가 모였습니다' 제안. 10시간 목표." },
+
+  // === Post-Launch: Analytics & Optimization ===
+  { id: "F-050", title: "PostHog 도입", page: "전체", status: "todo", priority: "P1", description: "어버이날 직후 즉시 도입. 유저 행동 분석, 퍼널 추적 (링크 생성 → 대화 시작 → 1챕터 완주). 이탈 지점 파악. 무료 플랜 시작." },
+  { id: "F-051", title: "Deepgram A/B 테스트", page: "백엔드", status: "todo", priority: "P1", description: "Whisper vs Deepgram 한국어 품질 비교. 노인 발화/사투리 정확도 검증. 비용: $2.58 vs $3.60 (10시간). 속도: 2-3배 빠름. Nova-2 모델 테스트." },
+  { id: "F-052", title: "완주율 퍼널 분석", page: "대시보드", status: "todo", priority: "P1", description: "PostHog 데이터 기반. 각 단계별 이탈률: 링크 수신 → 클릭 → 동의 → 첫 메시지 → 5분 → 1챕터 완주. 개선 우선순위 결정." },
+  { id: "F-053", title: "Deepgram 전환", page: "백엔드", status: "todo", priority: "P2", description: "A/B 테스트 완료 후. /api/transcribe를 Deepgram API로 전환. 실시간 스트리밍 준비. 화자 식별 기능 활용 가능." },
+  { id: "F-054", title: "AssemblyAI 화자 식별", page: "/interview/{id}", status: "todo", priority: "P2", description: "단톡방 기능 시 필요. 화자별 버블 색상 구분. 감정 분석 기능. speaker_label 자동 태깅." },
+  { id: "F-055", title: "Pinecone 도입", page: "백엔드", status: "todo", priority: "P2", description: "Human Voice Graph 구축 시작. entities를 벡터화하여 저장. 유사 경험 매칭 ('이런 이야기를 한 분들도'). 챕터 추천 고도화." },
+  { id: "F-056", title: "Stripe 글로벌 결제", page: "전체", status: "todo", priority: "P3", description: "해외 시장 진출 시. Toss는 한국 시장 유지. 구독 관리 강력. 다국어 결제 페이지." },
+  { id: "F-057", title: "WorkOS Enterprise SSO", page: "전체", status: "todo", priority: "P3", description: "B2B (요양원, 종친회, 교회 등). SAML/OIDC SSO. 조직 단위 관리." },
 ];
 
 export interface ChangelogEntry {
