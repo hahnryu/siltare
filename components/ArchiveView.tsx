@@ -150,9 +150,18 @@ export function ArchiveView({ interview, messages: messagesProp }: { interview: 
   const messages = messagesProp || interview.messages || [];
 
   // Extract chapter 1 draft
-  const chapter1Draft = autobiographyDraft && typeof autobiographyDraft === 'object'
-    ? (autobiographyDraft as Record<string, string>)['1']
-    : undefined;
+  let chapter1Draft: string | undefined;
+  if (autobiographyDraft) {
+    try {
+      // Handle both string (from DB) and object (already parsed)
+      const drafts = typeof autobiographyDraft === 'string'
+        ? JSON.parse(autobiographyDraft)
+        : autobiographyDraft;
+      chapter1Draft = drafts['1'] || drafts[1];
+    } catch {
+      chapter1Draft = undefined;
+    }
+  }
 
   useFadeIn();
 
