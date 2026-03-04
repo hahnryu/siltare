@@ -72,14 +72,14 @@ const TOPIC_DATA = [
 ];
 
 const RECENT_INTERVIEWS = [
-  { date: '2026.02.18', name: '박순자', relation: '어머니', region: '안동', duration: '32분', status: '완료', chapterProgress: '1장 완주', bookOrder: '₩79,000' },
-  { date: '2026.02.17', name: '김철수', relation: '아버지', region: '서울', duration: '28분', status: '완료', chapterProgress: '1장 2회차 / turning', bookOrder: null },
-  { date: '2026.02.17', name: '이영희', relation: '할머니', region: '부산', duration: '45분', status: '완료', chapterProgress: '2장 1회차 / space', bookOrder: '₩199,000' },
-  { date: '2026.02.16', name: '최미자', relation: '어머니', region: '제주', duration: '31분', status: '진행중', chapterProgress: '1장 1회차 / people', bookOrder: null },
-  { date: '2026.02.16', name: '정태호', relation: '할아버지', region: '대전', duration: '38분', status: '완료', chapterProgress: '1장 3회차 / closing', bookOrder: '₩79,000' },
-  { date: '2026.02.15', name: '한미영', relation: '어머니', region: '광주', duration: '27분', status: '실패', chapterProgress: '-', bookOrder: null },
-  { date: '2026.02.15', name: '송병철', relation: '아버지', region: '수원', duration: '41분', status: '완료', chapterProgress: '1장 완주', bookOrder: '₩199,000' },
-  { date: '2026.02.14', name: '오혜숙', relation: '할머니', region: '인천', duration: '35분', status: '완료', chapterProgress: '1장 2회차 / people', bookOrder: '₩79,000' },
+  { id: 'int001', date: '2026.02.18', name: '박순자', relation: '어머니', region: '안동', duration: '32분', status: '완료', chapterProgress: '1장 완주', bookOrder: '₩79,000', hasDraft: true, hasChapterContext: true },
+  { id: 'int002', date: '2026.02.17', name: '김철수', relation: '아버지', region: '서울', duration: '28분', status: '완료', chapterProgress: '1장 2회차 / turning', bookOrder: null, hasDraft: false, hasChapterContext: true },
+  { id: 'int003', date: '2026.02.17', name: '이영희', relation: '할머니', region: '부산', duration: '45분', status: '완료', chapterProgress: '2장 1회차 / space', bookOrder: '₩199,000', hasDraft: true, hasChapterContext: true },
+  { id: 'int004', date: '2026.02.16', name: '최미자', relation: '어머니', region: '제주', duration: '31분', status: '진행중', chapterProgress: '1장 1회차 / people', bookOrder: null, hasDraft: false, hasChapterContext: true },
+  { id: 'int005', date: '2026.02.16', name: '정태호', relation: '할아버지', region: '대전', duration: '38분', status: '완료', chapterProgress: '1장 3회차 / closing', bookOrder: '₩79,000', hasDraft: true, hasChapterContext: false },
+  { id: 'int006', date: '2026.02.15', name: '한미영', relation: '어머니', region: '광주', duration: '27분', status: '실패', chapterProgress: '-', bookOrder: null, hasDraft: false, hasChapterContext: false },
+  { id: 'int007', date: '2026.02.15', name: '송병철', relation: '아버지', region: '수원', duration: '41분', status: '완료', chapterProgress: '1장 완주', bookOrder: '₩199,000', hasDraft: true, hasChapterContext: true },
+  { id: 'int008', date: '2026.02.14', name: '오혜숙', relation: '할머니', region: '인천', duration: '35분', status: '완료', chapterProgress: '1장 2회차 / people', bookOrder: '₩79,000', hasDraft: false, hasChapterContext: true },
 ];
 
 const STATUS_BADGE: Record<string, string> = {
@@ -144,6 +144,44 @@ function MetricCard({ label, value, change, changeLabel, sub }: {
 
 export default function DashboardPage() {
   const [range, setRange] = useState<Range>('최근 7일');
+  const [loadingDraft, setLoadingDraft] = useState<string | null>(null);
+  const [loadingContext, setLoadingContext] = useState<string | null>(null);
+
+  const handleGenerateDraft = async (interviewId: string) => {
+    setLoadingDraft(interviewId);
+    try {
+      const res = await fetch('/api/chapter-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interviewId, chapterNum: 1 }),
+      });
+      if (!res.ok) throw new Error('초고 생성 실패');
+      alert('초고가 생성되었습니다');
+      window.location.reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '초고 생성 중 오류가 발생했습니다');
+    } finally {
+      setLoadingDraft(null);
+    }
+  };
+
+  const handleInitContext = async (interviewId: string) => {
+    setLoadingContext(interviewId);
+    try {
+      const res = await fetch('/api/init-chapter-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interviewId }),
+      });
+      if (!res.ok) throw new Error('컨텍스트 초기화 실패');
+      alert('컨텍스트가 초기화되었습니다');
+      window.location.reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '컨텍스트 초기화 중 오류가 발생했습니다');
+    } finally {
+      setLoadingContext(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-cream">
@@ -238,6 +276,7 @@ export default function DashboardPage() {
                       <th className="text-left px-4 py-3 text-stone font-medium">챕터 진도</th>
                       <th className="text-left px-4 py-3 text-stone font-medium">상태</th>
                       <th className="text-right px-4 py-3 text-stone font-medium hidden lg:table-cell">책주문</th>
+                      <th className="text-center px-4 py-3 text-stone font-medium">액션</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-mist">
@@ -266,6 +305,35 @@ export default function DashboardPage() {
                           </td>
                           <td className="px-4 py-3 text-right font-medium hidden lg:table-cell">
                             {row.bookOrder ?? <span className="text-stone">-</span>}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-2">
+                              {/* 초고 생성/확인 버튼 */}
+                              <button
+                                onClick={() => handleGenerateDraft(row.id)}
+                                disabled={loadingDraft === row.id}
+                                className="px-3 py-1.5 text-xs font-medium rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                                  bg-amber text-warm-white border-amber hover:bg-bark hover:border-bark"
+                              >
+                                {loadingDraft === row.id
+                                  ? '생성 중...'
+                                  : row.hasDraft
+                                  ? '초고 확인'
+                                  : '초고 생성'}
+                              </button>
+
+                              {/* 컨텍스트 초기화 버튼 (hasChapterContext가 false일 때만) */}
+                              {!row.hasChapterContext && (
+                                <button
+                                  onClick={() => handleInitContext(row.id)}
+                                  disabled={loadingContext === row.id}
+                                  className="px-3 py-1.5 text-xs font-medium rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                                    bg-stone text-warm-white border-stone hover:bg-bark hover:border-bark"
+                                >
+                                  {loadingContext === row.id ? '초기화 중...' : '컨텍스트 초기화'}
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
