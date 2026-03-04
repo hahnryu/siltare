@@ -70,6 +70,8 @@ export default function InterviewPage() {
   const [untranscribedWarning, setUntranscribedWarning] = useState('');
   const [showResumeBanner, setShowResumeBanner] = useState(false);
   const [lastSessionDate, setLastSessionDate] = useState<string | null>(null);
+  const [showHint, setShowHint] = useState(false);
+  const [isFirstMessage, setIsFirstMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Refs for stable access inside async callbacks (avoids stale closures)
@@ -213,8 +215,21 @@ export default function InterviewPage() {
           return;
         }
 
-        // First time or active: trigger AI first message
-        sendMessage('');
+        // First time or active
+        const intervieweeName = interview.interviewee?.name || '';
+        if (!intervieweeName || intervieweeName === '나') {
+          // Name collection mode: display greeting message (UI only, not saved to DB)
+          setMessages([{
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: '안녕하세요. 실타래입니다.\n성함이 어떻게 되세요?',
+            timestamp: new Date().toISOString(),
+          }]);
+          setIsFirstMessage(true);
+        } else {
+          // Name already collected: start normal conversation
+          sendMessage('');
+        }
       } catch (err) {
         console.error('Failed to load interview:', err);
       }
@@ -269,6 +284,14 @@ export default function InterviewPage() {
               : c
           )
         );
+
+        // Show hint only once (first voice transcription)
+        const hintShown = localStorage.getItem('siltare_hint_shown');
+        if (!hintShown) {
+          setShowHint(true);
+          localStorage.setItem('siltare_hint_shown', 'true');
+          setTimeout(() => setShowHint(false), 5000);
+        }
       } else {
         throw new Error('no text');
       }
@@ -375,6 +398,27 @@ export default function InterviewPage() {
       });
       return remaining;
     });
+
+    // First message: save name
+    if (isFirstMessage && interviewMetaRef.current) {
+      const nameInput = combined.trim().slice(0, 10);
+      try {
+        const { updateInterview } = await import('@/lib/store');
+        await updateInterview(id, {
+          interviewee: {
+            ...interviewMetaRef.current.interviewee,
+            name: nameInput,
+          },
+        });
+        interviewMetaRef.current = {
+          ...interviewMetaRef.current,
+          interviewee: { ...interviewMetaRef.current.interviewee, name: nameInput },
+        };
+        setIsFirstMessage(false);
+      } catch (err) {
+        console.error('Failed to save name:', err);
+      }
+    }
 
     // Pass first uploaded audio chunk ID to message (if any)
     const audioChunkId = uploadedAudioChunkIds.length > 0 ? uploadedAudioChunkIds[0] : undefined;
@@ -594,6 +638,14 @@ export default function InterviewPage() {
           {untranscribedWarning && (
             <div className="mx-auto rounded-lg bg-amber/10 px-4 py-2 text-center text-[13px] text-stone">
               {untranscribedWarning}
+            </div>
+          )}
+
+          {/* Voice hint (first transcription only) */}
+          {showHint && (
+            <div className="mx-auto rounded-lg bg-amber/10 px-4 py-3 text-center text-[13px] leading-relaxed text-stone">
+              잘못 받아적었다면 아래 키보드로 직접 고쳐주시면 돼요.<br />
+              앞으로 모든 과정 마찬가지예요.
             </div>
           )}
 

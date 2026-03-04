@@ -62,6 +62,8 @@ export async function updateInterview(id: string, updates: Partial<Interview>): 
   };
 
   if ('status' in updates) dbUpdates.status = updates.status;
+  if ('requester' in updates) dbUpdates.requester = updates.requester;
+  if ('interviewee' in updates) dbUpdates.interviewee = updates.interviewee;
   if ('transcript' in updates) dbUpdates.transcript = updates.transcript;
   if ('summary' in updates) dbUpdates.summary = updates.summary;
   if ('entities' in updates) dbUpdates.entities = updates.entities;
