@@ -151,25 +151,16 @@ export function ArchiveView({ interview, messages: messagesProp }: { interview: 
 
   // Extract chapter 1 draft
   let chapter1Draft: string | undefined;
-  console.log('[ArchiveView] autobiographyDraft:', autobiographyDraft);
-  console.log('[ArchiveView] autobiographyDraft type:', typeof autobiographyDraft);
   if (autobiographyDraft) {
     try {
       // Handle both string (from DB) and object (already parsed)
       const drafts = typeof autobiographyDraft === 'string'
         ? JSON.parse(autobiographyDraft)
         : autobiographyDraft;
-      console.log('[ArchiveView] drafts after parse:', drafts);
-      console.log('[ArchiveView] drafts["1"]:', drafts['1']);
-      console.log('[ArchiveView] drafts[1]:', drafts[1]);
       chapter1Draft = drafts['1'] || drafts[1];
-      console.log('[ArchiveView] chapter1Draft:', chapter1Draft);
-    } catch (err) {
-      console.error('[ArchiveView] Parse error:', err);
+    } catch {
       chapter1Draft = undefined;
     }
-  } else {
-    console.log('[ArchiveView] autobiographyDraft is falsy');
   }
 
   useFadeIn();
