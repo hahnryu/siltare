@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     // 1. 초고 생성 (Claude Sonnet, non-streaming)
     const draftPrompt = generateDraftPrompt(transcript, chapterNum, interview.interviewee.name);
     const draftMessage = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-sonnet-4-5',
       max_tokens: 2000,
       messages: [{ role: 'user', content: draftPrompt }],
     });
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     let suggestedChapters: CustomChapter[] | null = null;
     if (chapterNum === 1) {
       const diagnosisMessage = await anthropic.messages.create({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-5',
         max_tokens: 2000,
         messages: [
           { role: 'user', content: `${diagnosisPrompt}\n\n전사본:\n${transcript}` },
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Entities 추출 (Claude Sonnet)
     const entityMessage = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1500,
       messages: [
         { role: 'user', content: `${entityExtractionPrompt}\n\n전사본:\n${transcript}` },

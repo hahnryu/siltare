@@ -13,6 +13,12 @@ export async function POST(req: NextRequest) {
   try {
     const { interviewId, message } = await req.json();
 
+    // Check API key
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('[CHAT API] ANTHROPIC_API_KEY is not set');
+      return new Response('AI 서비스 설정 오류', { status: 500 });
+    }
+
     const interview = await getInterview(interviewId);
     if (!interview) {
       return new Response('인터뷰를 찾을 수 없습니다', { status: 404 });
@@ -103,8 +109,9 @@ ${lastUserMsg ? `- 답변하신 것: "${lastUserMsg.content}"` : ''}
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          console.log('[CHAT API] Starting Anthropic stream for interview:', interviewId);
           const messageStream = await anthropic.messages.stream({
-            model: 'claude-sonnet-4-5-20250929',
+            model: 'claude-sonnet-4-5',
             max_tokens: 300,
             system: systemPrompt,
             messages: anthropicMessages,
@@ -149,7 +156,12 @@ ${lastUserMsg ? `- 답변하신 것: "${lastUserMsg.content}"` : ''}
             });
           }
         } catch (err) {
-          console.error('Anthropic stream error:', err);
+          console.error('[CHAT API] Anthropic stream error:', {
+            error: err,
+            message: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+            interviewId,
+          });
           controller.error(err);
         }
 
@@ -165,7 +177,11 @@ ${lastUserMsg ? `- 답변하신 것: "${lastUserMsg.content}"` : ''}
       },
     });
   } catch (err) {
-    console.error('Chat API error:', err);
+    console.error('[CHAT API] Unhandled error:', {
+      error: err,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return new Response('서버 오류', { status: 500 });
   }
 }
