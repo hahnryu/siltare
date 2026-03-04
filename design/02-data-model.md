@@ -138,3 +138,77 @@ Supabase Storage bucket:
 audio-chunks/       // 음성 파일 원본
   {interview_id}/{chunk_id}.webm
 ```
+
+---
+
+## 컬럼 추가 (예약)
+
+### audio_chunks 테이블
+
+```sql
+transcript_corrected: text           // 유저 교정본. 현재 null 허용.
+transcript_corrected_at: timestamptz // 교정 시점
+```
+
+**두 컬럼 관계:**
+- `transcript`: Whisper 원본. 절대 덮어쓰지 않음.
+- `transcript_corrected`: 유저가 교정한 최종 텍스트.
+
+**구현 시점:** 어버이날 이후 DB 리팩토링 시.
+
+### interviews 테이블
+
+```sql
+language: text DEFAULT 'ko'
+CHECK (language IN ('ko', 'ja', 'zh', 'en'))
+```
+
+**구현 시점:** Layer 3 다국어 지원 시.
+
+---
+
+## autobiography_draft 구조 명시
+
+**타입:** JSONB
+
+**구조:** 챕터번호를 키로 사용
+```json
+{
+  "1": "1챕터 초고 텍스트",
+  "2": "2챕터 초고 텍스트",
+  ...
+}
+```
+
+**편집:**
+- `/api/update-draft`로 특정 챕터만 수정 가능
+- 기존 챕터는 유지, 해당 챕터만 덮어쓰기
+
+---
+
+## DB 리팩토링 목표 구조 (어버이날 이후)
+
+**현재 문제:** interviews 테이블 과부하
+
+**목표 구조:**
+```
+interviews     // 메타만. 가볍게.
+  - id, mode, status, requester, interviewee
+  - created_at, updated_at
+
+sessions       // 세션 단위 기록
+  - id, interview_id, chapter_num, session_num
+  - duration_sec, summary, started_at, ended_at
+
+messages       // session_id 연결
+  - id, session_id, interview_id, ...
+
+chapters       // 챕터 결과물
+  - id, interview_id, chapter_num
+  - draft, diagnosis, entities, chapter_map
+
+audio_chunks   // session_id 연결
+  - id, session_id, interview_id, ...
+```
+
+**마이그레이션 시점:** 어버이날(5월 8일) 이후, 본격 사용자 유입 전.

@@ -58,6 +58,133 @@
 
 ---
 
+## 초고 편집
+
+| 엔드포인트 | 역할 |
+|-----------|------|
+| PATCH /api/update-draft | 챕터별 초고 편집 저장. autobiography_draft JSONB 업데이트. |
+
+---
+
+## 관리자 도구
+
+| 엔드포인트 | 역할 |
+|-----------|------|
+| POST /api/init-chapter-context | chapter_context null인 인터뷰에 기본값 주입. 대시보드 전용. |
+| GET /api/interviews | 모든 인터뷰 목록. 대시보드 전용. |
+
+---
+
+## 신규 엔드포인트 상세
+
+### POST /api/chapter-complete
+
+**역할:** 챕터 완주 처리. 초고 생성 + 진단(1챕터) + 챕터 제안.
+
+**입력:**
+```json
+{
+  "interviewId": "...",
+  "chapterNum": 1
+}
+```
+
+**처리:**
+1. 초고 생성 (`generateDraftPrompt`)
+2. 1챕터: 진단 생성 (`diagnosisPrompt`) + `chapter_map` 업데이트
+3. 모든 챕터: `entities` 추출
+4. `status`: `chapter_complete`
+
+**응답:**
+```json
+{
+  "draft": "...",
+  "diagnosis": {...},           // 1챕터만
+  "suggestedChapters": [...],   // 1챕터만
+  "entities": {...}
+}
+```
+
+### POST /api/init-chapter-context
+
+**역할:** `chapter_context`가 null인 인터뷰에 기본값 주입.
+
+**입력:**
+```json
+{
+  "interviewId": "..."
+}
+```
+
+**처리:**
+```javascript
+const defaultContext = {
+  chapterNum: 1,
+  sessionNum: 1,
+  currentLayer: 'space',
+  completedLayers: [],
+  targetLayers: ['space', 'people'],
+  chapterComplete: false,
+};
+```
+
+**용도:** 관리자 대시보드에서 레거시 인터뷰 초기화.
+
+### PATCH /api/update-draft
+
+**역할:** 특정 챕터 초고 편집 저장.
+
+**입력:**
+```json
+{
+  "interviewId": "...",
+  "chapterNum": 1,
+  "draft": "편집된 초고 텍스트"
+}
+```
+
+**처리:**
+```javascript
+const updatedDrafts = {
+  ...existingDrafts,
+  [chapterNum]: draft,
+};
+```
+
+**응답:**
+```json
+{ "ok": true }
+```
+
+---
+
+## POST /api/complete 업데이트
+
+**기존:** 세션 종료 처리. 요약 생성.
+
+**추가:** 챕터 완주 판단 로직.
+
+**판단 조건:**
+```javascript
+if (
+  currentLayer === 'closing' &&
+  completedLayers.includes('space') &&
+  completedLayers.includes('people') &&
+  completedLayers.includes('turning')
+) {
+  // 챕터 완주 처리
+  status = 'chapter_complete';
+  // /api/chapter-complete 트리거 (내부 호출 또는 클라이언트 리디렉션)
+} else {
+  // 세션 종료 처리
+  status = 'session_end';
+  sessionNum++;
+  targetLayers 업데이트;
+}
+```
+
+---
+
 ## 설계 원칙
 
 - 모든 API는 TODO: add auth check here 주석 유지
